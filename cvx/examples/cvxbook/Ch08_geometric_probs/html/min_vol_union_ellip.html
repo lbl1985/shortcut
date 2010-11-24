@@ -1,0 +1,278 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN">
+<html xmlns:mwsh="http://www.mathworks.com/namespace/mcode/v1/syntaxhighlight.dtd">
+   <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   
+      <!--
+This HTML is auto-generated from an M-file.
+To make changes, update the M-file and republish this document.
+      -->
+      <title>Minimum volume ellipsoid covering union of ellipsoids</title>
+      <meta name="generator" content="MATLAB 7.5">
+      <meta name="date" content="2008-05-23">
+      <meta name="m-file" content="min_vol_union_ellip"><style>
+
+body {
+  background-color: white;
+  margin:10px;
+}
+
+h1 {
+  color: #990000; 
+  font-size: x-large;
+}
+
+h2 {
+  color: #990000;
+  font-size: medium;
+}
+
+/* Make the text shrink to fit narrow windows, but not stretch too far in 
+wide windows. */ 
+p,h1,h2,div.content div {
+  max-width: 600px;
+  /* Hack for IE6 */
+  width: auto !important; width: 600px;
+}
+
+pre.codeinput {
+  background: #EEEEEE;
+  padding: 10px;
+}
+@media print {
+  pre.codeinput {word-wrap:break-word; width:100%;}
+} 
+
+span.keyword {color: #0000FF}
+span.comment {color: #228B22}
+span.string {color: #A020F0}
+span.untermstring {color: #B20000}
+span.syscmd {color: #B28C00}
+
+pre.codeoutput {
+  color: #666666;
+  padding: 10px;
+}
+
+pre.error {
+  color: red;
+}
+
+p.footer {
+  text-align: right;
+  font-size: xx-small;
+  font-weight: lighter;
+  font-style: italic;
+  color: gray;
+}
+
+  </style></head>
+   <body>
+      <div class="content">
+         <h1>Minimum volume ellipsoid covering union of ellipsoids</h1><pre class="codeinput"><span class="comment">% Section 8.4.1, Boyd &amp; Vandenberghe "Convex Optimization"</span>
+<span class="comment">% Original version by Lieven Vandenberghe</span>
+<span class="comment">% Updated for CVX by Almir Mutapcic - Jan 2006</span>
+<span class="comment">% (a figure is generated)</span>
+<span class="comment">%</span>
+<span class="comment">% We find a smallest ellipsoid containing m ellipsoids</span>
+<span class="comment">% { x'*A_i*x + 2*b_i'*x + c &lt; 0 }, for i = 1,...,m</span>
+<span class="comment">%</span>
+<span class="comment">% Problem data:</span>
+<span class="comment">% As = {A1, A2, ..., Am}:  cell array of m pos. def. matrices</span>
+<span class="comment">% bs = {b1, b2, ..., bm}:  cell array of m 2-vectors</span>
+<span class="comment">% cs = {c1, c2, ..., cm}:  cell array of m scalars</span>
+
+<span class="comment">% ellipse data</span>
+As = {}; bs = {}; cs = {};
+As{1} = [ 0.1355    0.1148;  0.1148    0.4398];
+As{2} = [ 0.6064   -0.1022; -0.1022    0.7344];
+As{3} = [ 0.7127   -0.0559; -0.0559    0.9253];
+As{4} = [ 0.2706   -0.1379; -0.1379    0.2515];
+As{5} = [ 0.4008   -0.1112; -0.1112    0.2107];
+bs{1} = [ -0.2042  0.0264]';
+bs{2} = [  0.8259 -2.1188]';
+bs{3} = [ -0.0256  1.0591]';
+bs{4} = [  0.1827 -0.3844]';
+bs{5} = [  0.3823 -0.8253]';
+cs{1} = 0.2351;
+cs{2} = 5.8250;
+cs{3} = 0.9968;
+cs{4} = -0.2981;
+cs{5} = 2.6735;
+
+<span class="comment">% dimensions</span>
+n = 2;
+m = size(bs,2);    <span class="comment">% m ellipsoids given</span>
+
+<span class="comment">% construct and solve the problem as posed in the book</span>
+cvx_begin <span class="string">sdp</span>
+    variable <span class="string">Asqr(n,n)</span> <span class="string">symmetric</span>
+    variable <span class="string">btilde(n)</span>
+    variable <span class="string">t(m)</span>
+    maximize( det_rootn( Asqr ) )
+    subject <span class="string">to</span>
+        t &gt;= 0;
+        <span class="keyword">for</span> i = 1:m
+            [ -(Asqr - t(i)*As{i}), -(btilde - t(i)*bs{i}), zeros(n,n);
+              -(btilde - t(i)*bs{i})', -(- 1 - t(i)*cs{i}), -btilde';
+               zeros(n,n), -btilde, Asqr] &gt;= 0;
+        <span class="keyword">end</span>
+cvx_end
+
+<span class="comment">% convert to ellipsoid parametrization E = { x | || Ax + b || &lt;= 1 }</span>
+A = sqrtm(Asqr);
+b = A\btilde;
+
+<span class="comment">% plot ellipsoids using { x | || A_i x + b_i || &lt;= alpha } parametrization</span>
+noangles = 200;
+angles   = linspace( 0, 2 * pi, noangles );
+
+clf
+<span class="keyword">for</span> i=1:m
+  Ai = sqrtm(As{i}); bi = Ai\bs{i};
+  alpha = bs{i}'*inv(As{i})*bs{i} - cs{i};
+  ellipse  = Ai \ [ sqrt(alpha)*cos(angles)-bi(1) ; sqrt(alpha)*sin(angles)-bi(2) ];
+  plot( ellipse(1,:), ellipse(2,:), <span class="string">'b-'</span> );
+  hold <span class="string">on</span>
+<span class="keyword">end</span>
+ellipse  = A \ [ cos(angles) - b(1) ; sin(angles) - b(2) ];
+
+plot( ellipse(1,:), ellipse(2,:), <span class="string">'r--'</span> );
+axis <span class="string">square</span>
+axis <span class="string">off</span>
+hold <span class="string">off</span>
+</pre><pre class="codeoutput"> 
+Calling SDPT3: 93 variables, 14 equality constraints
+   For improved efficiency, SDPT3 is solving the dual problem.
+------------------------------------------------------------
+
+ num. of constraints = 14
+ dim. of sdp    var  = 31,   num. of sdp  blk  =  7
+ dim. of linear var  =  5
+*******************************************************************
+   SDPT3: Infeasible path-following algorithms
+*******************************************************************
+ version  predcorr  gam  expon  scale_data
+   HKM      1      0.000   1        0    
+it pstep dstep pinfeas dinfeas  gap      mean(obj)   cputime
+-------------------------------------------------------------------
+ 0|0.000|0.000|4.7e+01|7.2e+00|1.2e+03| 2.500000e+01| 0:0:00| chol  1  1 
+ 1|0.736|0.733|1.2e+01|2.0e+00|3.9e+02| 1.289755e+01| 0:0:00| chol  1  1 
+ 2|0.830|0.798|2.1e+00|4.1e-01|1.1e+02| 1.352995e+01| 0:0:00| chol  1  1 
+ 3|0.788|0.831|4.4e-01|7.0e-02|3.2e+01| 9.062085e+00| 0:0:00| chol  1  1 
+ 4|0.732|1.000|1.2e-01|1.0e-04|1.1e+01| 5.408952e+00| 0:0:00| chol  1  1 
+ 5|0.914|1.000|1.0e-02|1.0e-05|1.0e+00| 5.088850e-01| 0:0:00| chol  1  1 
+ 6|1.000|1.000|5.5e-09|2.0e-03|4.9e-01| 2.816580e-01| 0:0:00| chol  1  1 
+ 7|0.873|1.000|1.8e-09|1.0e-07|6.4e-02| 9.353402e-02| 0:0:00| chol  1  1 
+ 8|1.000|0.864|2.3e-09|2.3e-08|1.6e-02| 8.394428e-02| 0:0:00| chol  1  1 
+ 9|0.967|0.939|3.9e-10|2.8e-09|7.8e-04| 7.891261e-02| 0:0:00| chol  1  1 
+10|0.970|0.966|1.2e-11|2.7e-10|2.5e-05| 7.868813e-02| 0:0:00| chol  1  1 
+11|1.000|1.000|1.2e-13|2.4e-12|1.6e-06| 7.868196e-02| 0:0:00| chol  1  1 
+12|1.000|1.000|1.7e-10|1.0e-12|1.6e-07| 7.868152e-02| 0:0:00| chol  1  1 
+13|1.000|1.000|5.0e-11|1.5e-12|3.0e-09| 7.868147e-02| 0:0:00|
+  stop: max(relative gap, infeasibilities) &lt; 1.49e-08
+-------------------------------------------------------------------
+ number of iterations   = 13
+ primal objective value =  7.86814671e-02
+ dual   objective value =  7.86814640e-02
+ gap := trace(XZ)       = 3.04e-09
+ relative gap           = 2.62e-09
+ actual relative gap    = 2.62e-09
+ rel. primal infeas     = 4.97e-11
+ rel. dual   infeas     = 1.50e-12
+ norm(X), norm(y), norm(Z) = 2.2e+00, 3.0e+00, 8.1e+00
+ norm(A), norm(b), norm(C) = 1.4e+01, 2.0e+00, 3.2e+00
+ Total CPU time (secs)  = 0.3  
+ CPU time per iteration = 0.0  
+ termination code       =  0
+ DIMACS: 5.0e-11  0.0e+00  2.4e-12  0.0e+00  2.6e-09  2.6e-09
+-------------------------------------------------------------------
+------------------------------------------------------------
+Status: Solved
+Optimal value (cvx_optval): +0.0786815
+</pre><img vspace="5" hspace="5" src="min_vol_union_ellip_01.png"> <p class="footer"><br>
+            Published with MATLAB&reg; 7.5<br></p>
+      </div>
+      <!--
+##### SOURCE BEGIN #####
+%% Minimum volume ellipsoid covering union of ellipsoids
+
+% Section 8.4.1, Boyd & Vandenberghe "Convex Optimization"
+% Original version by Lieven Vandenberghe
+% Updated for CVX by Almir Mutapcic - Jan 2006
+% (a figure is generated)
+%
+% We find a smallest ellipsoid containing m ellipsoids
+% { x'*A_i*x + 2*b_i'*x + c < 0 }, for i = 1,...,m
+%
+% Problem data:
+% As = {A1, A2, ..., Am}:  cell array of m pos. def. matrices
+% bs = {b1, b2, ..., bm}:  cell array of m 2-vectors
+% cs = {c1, c2, ..., cm}:  cell array of m scalars
+
+% ellipse data
+As = {}; bs = {}; cs = {};
+As{1} = [ 0.1355    0.1148;  0.1148    0.4398];
+As{2} = [ 0.6064   -0.1022; -0.1022    0.7344];
+As{3} = [ 0.7127   -0.0559; -0.0559    0.9253];
+As{4} = [ 0.2706   -0.1379; -0.1379    0.2515];
+As{5} = [ 0.4008   -0.1112; -0.1112    0.2107];
+bs{1} = [ -0.2042  0.0264]';
+bs{2} = [  0.8259 -2.1188]';
+bs{3} = [ -0.0256  1.0591]';
+bs{4} = [  0.1827 -0.3844]';
+bs{5} = [  0.3823 -0.8253]';
+cs{1} = 0.2351;
+cs{2} = 5.8250;
+cs{3} = 0.9968;
+cs{4} = -0.2981;
+cs{5} = 2.6735;
+
+% dimensions
+n = 2;
+m = size(bs,2);    % m ellipsoids given
+
+% construct and solve the problem as posed in the book
+cvx_begin sdp
+    variable Asqr(n,n) symmetric
+    variable btilde(n)
+    variable t(m)
+    maximize( det_rootn( Asqr ) )
+    subject to
+        t >= 0;
+        for i = 1:m
+            [ -(Asqr - t(i)*As{i}), -(btilde - t(i)*bs{i}), zeros(n,n);
+              -(btilde - t(i)*bs{i})', -(- 1 - t(i)*cs{i}), -btilde';
+               zeros(n,n), -btilde, Asqr] >= 0;
+        end
+cvx_end
+
+% convert to ellipsoid parametrization E = { x | || Ax + b || <= 1 }
+A = sqrtm(Asqr);
+b = A\btilde;
+
+% plot ellipsoids using { x | || A_i x + b_i || <= alpha } parametrization
+noangles = 200;
+angles   = linspace( 0, 2 * pi, noangles );
+
+clf
+for i=1:m
+  Ai = sqrtm(As{i}); bi = Ai\bs{i};
+  alpha = bs{i}'*inv(As{i})*bs{i} - cs{i};
+  ellipse  = Ai \ [ sqrt(alpha)*cos(angles)-bi(1) ; sqrt(alpha)*sin(angles)-bi(2) ];
+  plot( ellipse(1,:), ellipse(2,:), 'b-' );
+  hold on
+end
+ellipse  = A \ [ cos(angles) - b(1) ; sin(angles) - b(2) ];
+
+plot( ellipse(1,:), ellipse(2,:), 'rREPLACE_WITH_DASH_DASH' );
+axis square
+axis off
+hold off
+
+##### SOURCE END #####
+-->
+   </body>
+</html>

@@ -1,0 +1,191 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN">
+<html xmlns:mwsh="http://www.mathworks.com/namespace/mcode/v1/syntaxhighlight.dtd">
+   <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   
+      <!--
+This HTML is auto-generated from an M-file.
+To make changes, update the M-file and republish this document.
+      -->
+      <title>Exercise 4.38(b): Linear matrix inequalities with one variable</title>
+      <meta name="generator" content="MATLAB 7.5">
+      <meta name="date" content="2008-05-23">
+      <meta name="m-file" content="ex_4_38"><style>
+
+body {
+  background-color: white;
+  margin:10px;
+}
+
+h1 {
+  color: #990000; 
+  font-size: x-large;
+}
+
+h2 {
+  color: #990000;
+  font-size: medium;
+}
+
+/* Make the text shrink to fit narrow windows, but not stretch too far in 
+wide windows. */ 
+p,h1,h2,div.content div {
+  max-width: 600px;
+  /* Hack for IE6 */
+  width: auto !important; width: 600px;
+}
+
+pre.codeinput {
+  background: #EEEEEE;
+  padding: 10px;
+}
+@media print {
+  pre.codeinput {word-wrap:break-word; width:100%;}
+} 
+
+span.keyword {color: #0000FF}
+span.comment {color: #228B22}
+span.string {color: #A020F0}
+span.untermstring {color: #B20000}
+span.syscmd {color: #B28C00}
+
+pre.codeoutput {
+  color: #666666;
+  padding: 10px;
+}
+
+pre.error {
+  color: red;
+}
+
+p.footer {
+  text-align: right;
+  font-size: xx-small;
+  font-weight: lighter;
+  font-style: italic;
+  color: gray;
+}
+
+  </style></head>
+   <body>
+      <div class="content">
+         <h1>Exercise 4.38(b): Linear matrix inequalities with one variable</h1><pre class="codeinput"><span class="comment">% From Boyd &amp; Vandenberghe, "Convex Optimization"</span>
+<span class="comment">% Jo&euml;lle Skaf - 09/26/05</span>
+<span class="comment">%</span>
+<span class="comment">% Finds the optimal t that would maximize c*t while still having A - t*B</span>
+<span class="comment">% positive semidefinite by solving the following SDP:</span>
+<span class="comment">%           minimize    c*t</span>
+<span class="comment">%               s.t.    t*B &lt;= A</span>
+<span class="comment">% c can either be a positive or negative real number</span>
+
+<span class="comment">% Generate input data</span>
+randn(<span class="string">'state'</span>,0);
+n = 4;
+A = randn(n); A = 0.5*(A'+A); <span class="comment">%A = A'*A;</span>
+B = randn(n); B = B'*B;
+<span class="comment">% can modify the value of c (&gt;0 or &lt;0)</span>
+c = -1;
+
+<span class="comment">% Create and solve the model</span>
+cvx_begin <span class="string">sdp</span>
+    variable <span class="string">t</span>
+    minimize ( c*t )
+    A &gt;= t * B;
+cvx_end
+
+<span class="comment">% Display results</span>
+disp(<span class="string">'------------------------------------------------------------------------'</span>);
+disp(<span class="string">'The optimal t obtained is'</span>);
+disp(t);
+</pre><pre class="codeoutput"> 
+Calling SDPT3: 10 variables, 1 equality constraints
+   For improved efficiency, SDPT3 is solving the dual problem.
+------------------------------------------------------------
+
+ num. of constraints =  1
+ dim. of sdp    var  =  4,   num. of sdp  blk  =  1
+*******************************************************************
+   SDPT3: Infeasible path-following algorithms
+*******************************************************************
+ version  predcorr  gam  expon  scale_data
+   HKM      1      0.000   1        0    
+it pstep dstep pinfeas dinfeas  gap      mean(obj)   cputime
+-------------------------------------------------------------------
+ 0|0.000|0.000|1.5e+01|5.3e+00|8.7e+01| 6.855734e-01| 0:0:00| chol  1  1 
+ 1|0.904|0.933|1.4e+00|4.0e-01|8.6e+00|-1.316248e+00| 0:0:00| chol  1  1 
+ 2|0.940|0.381|8.5e-02|2.5e-01|1.1e+00|-5.136774e+00| 0:0:00| chol  1  1 
+ 3|0.045|0.388|8.1e-02|1.5e-01|8.6e+00|-1.785268e+01| 0:0:00| chol  1  1 
+ 4|0.164|1.000|6.8e-02|5.0e-05|4.1e+01|-5.089196e+01| 0:0:00| chol  1  1 
+ 5|1.000|0.939|1.8e-10|1.5e-03|3.5e+00|-4.734455e+01| 0:0:00| chol  1  1 
+ 6|1.000|1.000|3.2e-11|5.0e-07|3.9e-01|-4.827072e+01| 0:0:00| chol  1  1 
+ 7|0.967|0.984|1.8e-11|5.7e-08|1.1e-02|-4.835024e+01| 0:0:00| chol  1  1 
+ 8|0.982|1.000|4.2e-13|5.0e-09|6.2e-04|-4.835383e+01| 0:0:00| chol  1  1 
+ 9|0.987|1.000|1.4e-12|1.0e-12|3.4e-05|-4.835402e+01| 0:0:00| chol  1  1 
+10|0.980|1.000|2.3e-13|1.0e-12|1.8e-06|-4.835403e+01| 0:0:00| chol  1  1 
+11|1.000|1.000|7.0e-13|1.0e-12|3.5e-07|-4.835403e+01| 0:0:00|
+  stop: max(relative gap, infeasibilities) &lt; 1.49e-08
+-------------------------------------------------------------------
+ number of iterations   = 11
+ primal objective value = -4.83540312e+01
+ dual   objective value = -4.83540315e+01
+ gap := trace(XZ)       = 3.51e-07
+ relative gap           = 3.59e-09
+ actual relative gap    = 3.59e-09
+ rel. primal infeas     = 7.03e-13
+ rel. dual   infeas     = 9.98e-13
+ norm(X), norm(y), norm(Z) = 1.1e+02, 4.8e+01, 4.8e+02
+ norm(A), norm(b), norm(C) = 1.1e+01, 2.0e+00, 4.0e+00
+ Total CPU time (secs)  = 0.4  
+ CPU time per iteration = 0.0  
+ termination code       =  0
+ DIMACS: 7.0e-13  0.0e+00  1.7e-12  0.0e+00  3.6e-09  3.6e-09
+-------------------------------------------------------------------
+------------------------------------------------------------
+Status: Solved
+Optimal value (cvx_optval): +48.354
+------------------------------------------------------------------------
+The optimal t obtained is
+  -48.3540
+
+</pre><p class="footer"><br>
+            Published with MATLAB&reg; 7.5<br></p>
+      </div>
+      <!--
+##### SOURCE BEGIN #####
+%% Exercise 4.38(b): Linear matrix inequalities with one variable
+
+% From Boyd & Vandenberghe, "Convex Optimization"
+% Joëlle Skaf - 09/26/05
+%
+% Finds the optimal t that would maximize c*t while still having A - t*B
+% positive semidefinite by solving the following SDP:
+%           minimize    c*t
+%               s.t.    t*B <= A
+% c can either be a positive or negative real number
+
+% Generate input data
+randn('state',0);
+n = 4;
+A = randn(n); A = 0.5*(A'+A); %A = A'*A;
+B = randn(n); B = B'*B;
+% can modify the value of c (>0 or <0)
+c = -1;
+
+% Create and solve the model
+cvx_begin sdp
+    variable t
+    minimize ( c*t )
+    A >= t * B;
+cvx_end
+
+% Display results
+disp('REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASH');
+disp('The optimal t obtained is');
+disp(t);
+
+##### SOURCE END #####
+-->
+   </body>
+</html>

@@ -1,0 +1,429 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN">
+<html xmlns:mwsh="http://www.mathworks.com/namespace/mcode/v1/syntaxhighlight.dtd">
+   <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   
+      <!--
+This HTML is auto-generated from an M-file.
+To make changes, update the M-file and republish this document.
+      -->
+      <title>Minimize sidelobe level of a uniform linear array via spectral factorization</title>
+      <meta name="generator" content="MATLAB 7.5">
+      <meta name="date" content="2008-05-23">
+      <meta name="m-file" content="line_array_spec_fact"><style>
+
+body {
+  background-color: white;
+  margin:10px;
+}
+
+h1 {
+  color: #990000; 
+  font-size: x-large;
+}
+
+h2 {
+  color: #990000;
+  font-size: medium;
+}
+
+/* Make the text shrink to fit narrow windows, but not stretch too far in 
+wide windows. */ 
+p,h1,h2,div.content div {
+  max-width: 600px;
+  /* Hack for IE6 */
+  width: auto !important; width: 600px;
+}
+
+pre.codeinput {
+  background: #EEEEEE;
+  padding: 10px;
+}
+@media print {
+  pre.codeinput {word-wrap:break-word; width:100%;}
+} 
+
+span.keyword {color: #0000FF}
+span.comment {color: #228B22}
+span.string {color: #A020F0}
+span.untermstring {color: #B20000}
+span.syscmd {color: #B28C00}
+
+pre.codeoutput {
+  color: #666666;
+  padding: 10px;
+}
+
+pre.error {
+  color: red;
+}
+
+p.footer {
+  text-align: right;
+  font-size: xx-small;
+  font-weight: lighter;
+  font-style: italic;
+  color: gray;
+}
+
+  </style></head>
+   <body>
+      <div class="content">
+         <h1>Minimize sidelobe level of a uniform linear array via spectral factorization</h1><pre class="codeinput"><span class="comment">% "FIR Filter Design via Spectral Factorization and Convex Optimization" example</span>
+<span class="comment">% by S.-P. Wu, S. Boyd, and L. Vandenberghe</span>
+<span class="comment">% (figures are generated)</span>
+<span class="comment">%</span>
+<span class="comment">% Designs a uniform linear antenna array using spectral factorization method where:</span>
+<span class="comment">% - it minimizes sidelobe level outside the beamwidth of the pattern</span>
+<span class="comment">% - it has a constraint on the maximum ripple around unit gain in the beamwidth</span>
+<span class="comment">%</span>
+<span class="comment">%   minimize   max |y(theta)|                   for theta in the stop-beamwidth</span>
+<span class="comment">%       s.t.   1/delta &lt;= |y(theta)| &lt;= delta   for theta in the pass-beamwidth</span>
+<span class="comment">%</span>
+<span class="comment">% We first replace the look-angle variable theta with the "frequency"</span>
+<span class="comment">% variable omega, defined by omega = -2*pi*d/lambda*cos(theta).</span>
+<span class="comment">% This transforms the antenna pattern y(theta) into a standard discrete</span>
+<span class="comment">% Fourier transform of array weights w. Then we apply another change of</span>
+<span class="comment">% variables: we replace w with its auto-correlation coefficients r.</span>
+<span class="comment">%</span>
+<span class="comment">% Now the problem can be solved via spectral factorization approach:</span>
+<span class="comment">%</span>
+<span class="comment">%   minimize   max R(omega)                        for omega in the stopband</span>
+<span class="comment">%       s.t.   (1/delta)^2 &lt;= R(omega) &lt;= delta^2  for omega in the passband</span>
+<span class="comment">%              R(omega) &gt;= 0                       for all omega</span>
+<span class="comment">%</span>
+<span class="comment">% where R(omega) is the squared magnitude of the y(theta) array response</span>
+<span class="comment">% (and the Fourier transform of the autocorrelation coefficients r).</span>
+<span class="comment">% Variables are coefficients r. delta is the allowed passband ripple.</span>
+<span class="comment">% This is a convex problem (can be formulated as an LP after sampling).</span>
+<span class="comment">%</span>
+<span class="comment">% Written for CVX by Almir Mutapcic 02/02/06</span>
+
+<span class="comment">%********************************************************************</span>
+<span class="comment">% problem specs: a uniform line array with inter-element spacing d</span>
+<span class="comment">%                antenna element locations are at d*[0:n-1]</span>
+<span class="comment">%                (the array pattern will be symmetric around origin)</span>
+<span class="comment">%********************************************************************</span>
+n = 20;               <span class="comment">% number of antenna elements</span>
+lambda = 1;           <span class="comment">% wavelength</span>
+d = 0.45*lambda;      <span class="comment">% inter-element spacing</span>
+
+<span class="comment">% passband direction from 30 to 60 degrees (30 degrees bandwidth)</span>
+<span class="comment">% transition band is 15 degrees on both sides of the passband</span>
+theta_pass = 40;
+theta_stop = 50;
+
+<span class="comment">% passband max allowed ripple</span>
+ripple = 0.1; <span class="comment">% in dB (+/- around the unit gain)</span>
+
+<span class="comment">%********************************************************************</span>
+<span class="comment">% construct optimization data</span>
+<span class="comment">%********************************************************************</span>
+<span class="comment">% number of frequency samples</span>
+m = 30*n;
+
+<span class="comment">% convert passband and stopband angles into omega frequencies</span>
+omega_zero = -2*pi*d/lambda;
+omega_pass = -2*pi*d/lambda*cos(theta_pass*pi/180);
+omega_stop = -2*pi*d/lambda*cos(theta_stop*pi/180);
+omega_pi   = +2*pi*d/lambda;
+
+<span class="comment">% build matrix A that relates R(omega) and r, ie, R = A*r</span>
+omega = linspace(-pi,pi,m)';
+A = exp( -j*kron( omega, [-(n-1):n-1] ) );
+
+<span class="comment">% passband constraint matrix</span>
+indp = find( omega &gt;= omega_zero &amp; omega &lt;= omega_pass );
+Ap   = A(indp,:);
+
+<span class="comment">% stopband constraint matrix</span>
+inds = find( omega &gt;= omega_stop &amp; omega &lt;= omega_pi );
+As   = A(inds,:);
+
+<span class="comment">%********************************************************************</span>
+<span class="comment">% formulate and solve the magnitude design problem</span>
+<span class="comment">%********************************************************************</span>
+cvx_begin
+  variable <span class="string">r(2*n-1,1)</span> <span class="string">complex</span>
+
+  minimize( max( abs( As*r ) ) )
+  subject <span class="string">to</span>
+    <span class="comment">% passband constraints</span>
+    real( Ap*r ) &gt;= (10^(-ripple/20))^2;
+    real( Ap*r ) &lt;= (10^(+ripple/20))^2;
+    <span class="comment">% nonnegative-real constraint for all frequencies (a bit redundant)</span>
+    real( A*r ) &gt;= 0;
+    <span class="comment">% auto-correlation constraints</span>
+    r(n) == conj(r(n));
+    r(n-1:-1:1) == conj(r(n+1:end));
+cvx_end
+
+<span class="comment">% check if problem was successfully solved</span>
+disp([<span class="string">'Problem is '</span> cvx_status])
+<span class="keyword">if</span> ~strfind(cvx_status,<span class="string">'Solved'</span>)
+  <span class="keyword">return</span>
+<span class="keyword">end</span>
+
+<span class="comment">% find antenna weights by computing the spectral factorization</span>
+w = spectral_fact(r);
+
+<span class="comment">% divided by 2 since this is in PSD domain</span>
+min_sidelobe_level = 10*log10( cvx_optval );
+fprintf(1,<span class="string">'The minimum sidelobe level is %3.2f dB.\n\n'</span>,<span class="keyword">...</span>
+          min_sidelobe_level);
+
+<span class="comment">%********************************************************************</span>
+<span class="comment">% plots</span>
+<span class="comment">%********************************************************************</span>
+<span class="comment">% build matrix G that relates y(theta) and w, ie, y = G*w</span>
+theta = [-180:180]';
+G = kron( cos(pi*theta/180), [0:n-1] );
+G = exp(2*pi*i*d/lambda*G);
+y = G*w;
+
+<span class="comment">% plot array pattern</span>
+figure(1), clf
+ymin = -40; ymax = 5;
+plot([-180:180], 20*log10(abs(y)), <span class="keyword">...</span>
+     [theta_stop theta_stop],[ymin ymax],<span class="string">'r--'</span>,<span class="keyword">...</span>
+     [-theta_pass -theta_pass],[ymin ymax],<span class="string">'r--'</span>,<span class="keyword">...</span>
+     [-theta_stop -theta_stop],[ymin ymax],<span class="string">'r--'</span>,<span class="keyword">...</span>
+     [theta_pass theta_pass],[ymin ymax],<span class="string">'r--'</span>);
+xlabel(<span class="string">'look angle'</span>), ylabel(<span class="string">'mag y(theta) in dB'</span>);
+axis([-180 180 ymin ymax]);
+
+<span class="comment">% polar plot</span>
+figure(2), clf
+zerodB = 50;
+dBY = 20*log10(abs(y)) + zerodB;
+plot(dBY.*cos(pi*theta/180), dBY.*sin(pi*theta/180), <span class="string">'-'</span>);
+axis([-zerodB zerodB -zerodB zerodB]), axis(<span class="string">'off'</span>), axis(<span class="string">'square'</span>)
+hold <span class="string">on</span>
+plot(zerodB*cos(pi*theta/180),zerodB*sin(pi*theta/180),<span class="string">'k:'</span>) <span class="comment">% 0 dB</span>
+plot( (min_sidelobe_level + zerodB)*cos(pi*theta/180), <span class="keyword">...</span>
+      (min_sidelobe_level + zerodB)*sin(pi*theta/180),<span class="string">'k:'</span>)  <span class="comment">% min level</span>
+text(-zerodB,0,<span class="string">'0 dB'</span>)
+text(-(min_sidelobe_level + zerodB),0,sprintf(<span class="string">'%0.1f dB'</span>,min_sidelobe_level));
+plot([0 60*cos(theta_pass*pi/180)], [0 60*sin(theta_pass*pi/180)], <span class="string">'k:'</span>)
+plot([0 60*cos(-theta_pass*pi/180)],[0 60*sin(-theta_pass*pi/180)],<span class="string">'k:'</span>)
+plot([0 60*cos(theta_stop*pi/180)], [0 60*sin(theta_stop*pi/180)], <span class="string">'k:'</span>)
+plot([0 60*cos(-theta_stop*pi/180)],[0 60*sin(-theta_stop*pi/180)],<span class="string">'k:'</span>)
+hold <span class="string">off</span>
+</pre><pre class="codeoutput"> 
+Calling SDPT3: 2057 variables, 40 equality constraints
+   For improved efficiency, SDPT3 is solving the dual problem.
+------------------------------------------------------------
+
+ num. of constraints = 40
+ dim. of socp   var  = 1329,   num. of socp blk  = 443
+ dim. of linear var  = 728
+*******************************************************************
+   SDPT3: Infeasible path-following algorithms
+*******************************************************************
+ version  predcorr  gam  expon  scale_data
+    NT      1      0.000   1        0    
+it pstep dstep pinfeas dinfeas  gap      mean(obj)   cputime
+-------------------------------------------------------------------
+ 0|0.000|0.000|1.6e+04|1.1e+02|1.6e+06| 7.952977e+01| 0:0:00| chol  1  1 
+ 1|0.752|0.715|4.0e+03|3.0e+01|5.1e+05| 1.151512e+03| 0:0:00| chol  1  1 
+ 2|0.707|0.811|1.2e+03|5.8e+00|1.5e+05| 1.407034e+03| 0:0:00| chol  1  1 
+ 3|0.895|0.839|1.2e+02|9.5e-01|2.0e+04| 8.345163e+02| 0:0:00| chol  1  1 
+ 4|0.756|0.741|3.0e+01|2.5e-01|6.0e+03| 2.422236e+02| 0:0:00| chol  1  1 
+ 5|0.875|1.000|3.8e+00|2.4e-03|9.3e+02| 2.188878e+01| 0:0:01| chol  1  1 
+ 6|0.908|0.751|3.5e-01|1.2e-03|1.5e+02|-2.995521e+01| 0:0:01| chol  1  1 
+ 7|0.722|0.562|9.6e-02|5.5e-04|7.2e+01|-2.008094e+01| 0:0:01| chol  2  1 
+ 8|1.000|1.000|4.0e-06|1.9e-02|2.6e+01|-7.286369e+00| 0:0:01| chol  1  1 
+ 9|0.944|0.889|5.3e-07|2.1e-03|2.8e+00|-7.590024e-01| 0:0:01| chol  1  1 
+10|0.657|0.588|1.8e-07|8.8e-04|1.5e+00|-4.959159e-01| 0:0:01| chol  1  1 
+11|1.000|0.966|2.2e-12|3.0e-05|5.5e-01|-1.615009e-01| 0:0:01| chol  1  1 
+12|0.980|0.853|2.5e-13|4.4e-06|1.0e-01|-3.777283e-02| 0:0:01| chol  1  1 
+13|0.502|0.758|1.3e-13|1.1e-06|5.3e-02|-1.651808e-02| 0:0:01| chol  1  1 
+14|0.634|0.859|4.8e-14|1.5e-07|2.1e-02|-5.744787e-03| 0:0:02| chol  1  1 
+15|0.453|0.464|4.2e-14|8.1e-08|1.5e-02|-4.499504e-03| 0:0:02| chol  1  1 
+16|0.513|0.730|7.2e-14|2.2e-08|8.7e-03|-2.756362e-03| 0:0:02| chol  1  1 
+17|0.740|0.763|1.2e-13|5.2e-09|4.0e-03|-2.531183e-03| 0:0:02| chol  1  1 
+18|0.201|0.913|1.5e-13|4.5e-10|3.1e-03|-2.520267e-03| 0:0:02| chol  1  1 
+19|0.682|1.000|1.6e-13|1.0e-12|1.3e-03|-3.033583e-03| 0:0:02| chol  1  1 
+20|0.928|0.863|1.8e-12|1.1e-12|2.5e-04|-3.344816e-03| 0:0:02| chol  1  1 
+21|0.930|0.793|2.0e-12|1.2e-12|4.2e-05|-3.414977e-03| 0:0:02| chol  1  1 
+22|0.923|0.823|5.0e-13|1.2e-12|6.7e-06|-3.426096e-03| 0:0:02| chol  1  1 
+23|0.931|0.817|6.3e-13|1.2e-12|9.3e-07|-3.427911e-03| 0:0:02| chol  1  1 
+24|0.959|0.969|4.0e-13|1.0e-12|7.6e-08|-3.428117e-03| 0:0:03| chol  1  1 
+25|0.989|0.988|4.2e-13|1.0e-12|1.5e-09|-3.428146e-03| 0:0:03|
+  stop: max(relative gap, infeasibilities) &lt; 1.49e-08
+-------------------------------------------------------------------
+ number of iterations   = 25
+ primal objective value = -3.42814544e-03
+ dual   objective value = -3.42814691e-03
+ gap := trace(XZ)       = 1.47e-09
+ relative gap           = 1.46e-09
+ actual relative gap    = 1.46e-09
+ rel. primal infeas     = 4.16e-13
+ rel. dual   infeas     = 1.01e-12
+ norm(X), norm(y), norm(Z) = 8.6e-01, 2.9e-01, 9.2e+00
+ norm(A), norm(b), norm(C) = 3.0e+02, 2.0e+00, 1.2e+01
+ Total CPU time (secs)  = 2.7  
+ CPU time per iteration = 0.1  
+ termination code       =  0
+ DIMACS: 4.2e-13  0.0e+00  6.2e-12  0.0e+00  1.5e-09  1.5e-09
+-------------------------------------------------------------------
+------------------------------------------------------------
+Status: Solved
+Optimal value (cvx_optval): +0.00342815
+Problem is Solved
+The minimum sidelobe level is -24.65 dB.
+
+</pre><img vspace="5" hspace="5" src="line_array_spec_fact_01.png"> <img vspace="5" hspace="5" src="line_array_spec_fact_02.png"> <p class="footer"><br>
+            Published with MATLAB&reg; 7.5<br></p>
+      </div>
+      <!--
+##### SOURCE BEGIN #####
+%% Minimize sidelobe level of a uniform linear array via spectral factorization
+
+% "FIR Filter Design via Spectral Factorization and Convex Optimization" example
+% by S.-P. Wu, S. Boyd, and L. Vandenberghe
+% (figures are generated)
+%
+% Designs a uniform linear antenna array using spectral factorization method where:
+% - it minimizes sidelobe level outside the beamwidth of the pattern
+% - it has a constraint on the maximum ripple around unit gain in the beamwidth
+%
+%   minimize   max |y(theta)|                   for theta in the stop-beamwidth
+%       s.t.   1/delta <= |y(theta)| <= delta   for theta in the pass-beamwidth
+%
+% We first replace the look-angle variable theta with the "frequency"
+% variable omega, defined by omega = -2*pi*d/lambda*cos(theta).
+% This transforms the antenna pattern y(theta) into a standard discrete
+% Fourier transform of array weights w. Then we apply another change of
+% variables: we replace w with its auto-correlation coefficients r.
+%
+% Now the problem can be solved via spectral factorization approach:
+%
+%   minimize   max R(omega)                        for omega in the stopband
+%       s.t.   (1/delta)^2 <= R(omega) <= delta^2  for omega in the passband
+%              R(omega) >= 0                       for all omega
+%
+% where R(omega) is the squared magnitude of the y(theta) array response
+% (and the Fourier transform of the autocorrelation coefficients r).
+% Variables are coefficients r. delta is the allowed passband ripple.
+% This is a convex problem (can be formulated as an LP after sampling).
+%
+% Written for CVX by Almir Mutapcic 02/02/06
+
+%********************************************************************
+% problem specs: a uniform line array with inter-element spacing d
+%                antenna element locations are at d*[0:n-1]
+%                (the array pattern will be symmetric around origin)
+%********************************************************************
+n = 20;               % number of antenna elements
+lambda = 1;           % wavelength
+d = 0.45*lambda;      % inter-element spacing
+
+% passband direction from 30 to 60 degrees (30 degrees bandwidth)
+% transition band is 15 degrees on both sides of the passband
+theta_pass = 40;
+theta_stop = 50;
+
+% passband max allowed ripple
+ripple = 0.1; % in dB (+/- around the unit gain)
+
+%********************************************************************
+% construct optimization data
+%********************************************************************
+% number of frequency samples
+m = 30*n;
+
+% convert passband and stopband angles into omega frequencies
+omega_zero = -2*pi*d/lambda;
+omega_pass = -2*pi*d/lambda*cos(theta_pass*pi/180);
+omega_stop = -2*pi*d/lambda*cos(theta_stop*pi/180);
+omega_pi   = +2*pi*d/lambda;
+
+% build matrix A that relates R(omega) and r, ie, R = A*r
+omega = linspace(-pi,pi,m)';
+A = exp( -j*kron( omega, [-(n-1):n-1] ) );
+
+% passband constraint matrix
+indp = find( omega >= omega_zero & omega <= omega_pass );
+Ap   = A(indp,:);
+
+% stopband constraint matrix
+inds = find( omega >= omega_stop & omega <= omega_pi );
+As   = A(inds,:);
+
+%********************************************************************
+% formulate and solve the magnitude design problem
+%********************************************************************
+cvx_begin
+  variable r(2*n-1,1) complex
+
+  minimize( max( abs( As*r ) ) )
+  subject to
+    % passband constraints
+    real( Ap*r ) >= (10^(-ripple/20))^2;
+    real( Ap*r ) <= (10^(+ripple/20))^2;
+    % nonnegative-real constraint for all frequencies (a bit redundant)
+    real( A*r ) >= 0;
+    % auto-correlation constraints
+    r(n) == conj(r(n));
+    r(n-1:-1:1) == conj(r(n+1:end));
+cvx_end
+
+% check if problem was successfully solved
+disp(['Problem is ' cvx_status])
+if ~strfind(cvx_status,'Solved')
+  return
+end
+
+% find antenna weights by computing the spectral factorization
+w = spectral_fact(r);
+
+% divided by 2 since this is in PSD domain
+min_sidelobe_level = 10*log10( cvx_optval );
+fprintf(1,'The minimum sidelobe level is %3.2f dB.\n\n',...
+          min_sidelobe_level);
+
+%********************************************************************
+% plots
+%********************************************************************
+% build matrix G that relates y(theta) and w, ie, y = G*w
+theta = [-180:180]';
+G = kron( cos(pi*theta/180), [0:n-1] );
+G = exp(2*pi*i*d/lambda*G);
+y = G*w;
+
+% plot array pattern
+figure(1), clf
+ymin = -40; ymax = 5;
+plot([-180:180], 20*log10(abs(y)), ...
+     [theta_stop theta_stop],[ymin ymax],'rREPLACE_WITH_DASH_DASH',...
+     [-theta_pass -theta_pass],[ymin ymax],'rREPLACE_WITH_DASH_DASH',...
+     [-theta_stop -theta_stop],[ymin ymax],'rREPLACE_WITH_DASH_DASH',...
+     [theta_pass theta_pass],[ymin ymax],'rREPLACE_WITH_DASH_DASH');
+xlabel('look angle'), ylabel('mag y(theta) in dB');
+axis([-180 180 ymin ymax]);
+
+% polar plot
+figure(2), clf
+zerodB = 50;
+dBY = 20*log10(abs(y)) + zerodB;
+plot(dBY.*cos(pi*theta/180), dBY.*sin(pi*theta/180), '-');
+axis([-zerodB zerodB -zerodB zerodB]), axis('off'), axis('square')
+hold on
+plot(zerodB*cos(pi*theta/180),zerodB*sin(pi*theta/180),'k:') % 0 dB
+plot( (min_sidelobe_level + zerodB)*cos(pi*theta/180), ...
+      (min_sidelobe_level + zerodB)*sin(pi*theta/180),'k:')  % min level
+text(-zerodB,0,'0 dB')
+text(-(min_sidelobe_level + zerodB),0,sprintf('%0.1f dB',min_sidelobe_level));
+plot([0 60*cos(theta_pass*pi/180)], [0 60*sin(theta_pass*pi/180)], 'k:')
+plot([0 60*cos(-theta_pass*pi/180)],[0 60*sin(-theta_pass*pi/180)],'k:')
+plot([0 60*cos(theta_stop*pi/180)], [0 60*sin(theta_stop*pi/180)], 'k:')
+plot([0 60*cos(-theta_stop*pi/180)],[0 60*sin(-theta_stop*pi/180)],'k:')
+hold off
+
+##### SOURCE END #####
+-->
+   </body>
+</html>

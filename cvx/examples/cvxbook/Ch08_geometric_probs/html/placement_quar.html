@@ -1,0 +1,323 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN">
+<html xmlns:mwsh="http://www.mathworks.com/namespace/mcode/v1/syntaxhighlight.dtd">
+   <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   
+      <!--
+This HTML is auto-generated from an M-file.
+To make changes, update the M-file and republish this document.
+      -->
+      <title>Figure 8.17: Fourth-order placement problem</title>
+      <meta name="generator" content="MATLAB 7.5">
+      <meta name="date" content="2008-05-23">
+      <meta name="m-file" content="placement_quar"><style>
+
+body {
+  background-color: white;
+  margin:10px;
+}
+
+h1 {
+  color: #990000; 
+  font-size: x-large;
+}
+
+h2 {
+  color: #990000;
+  font-size: medium;
+}
+
+/* Make the text shrink to fit narrow windows, but not stretch too far in 
+wide windows. */ 
+p,h1,h2,div.content div {
+  max-width: 600px;
+  /* Hack for IE6 */
+  width: auto !important; width: 600px;
+}
+
+pre.codeinput {
+  background: #EEEEEE;
+  padding: 10px;
+}
+@media print {
+  pre.codeinput {word-wrap:break-word; width:100%;}
+} 
+
+span.keyword {color: #0000FF}
+span.comment {color: #228B22}
+span.string {color: #A020F0}
+span.untermstring {color: #B20000}
+span.syscmd {color: #B28C00}
+
+pre.codeoutput {
+  color: #666666;
+  padding: 10px;
+}
+
+pre.error {
+  color: red;
+}
+
+p.footer {
+  text-align: right;
+  font-size: xx-small;
+  font-weight: lighter;
+  font-style: italic;
+  color: gray;
+}
+
+  </style></head>
+   <body>
+      <div class="content">
+         <h1>Figure 8.17: Fourth-order placement problem</h1><pre class="codeinput"><span class="comment">% Section 8.7.3, Boyd &amp; Vandenberghe "Convex Optimization"</span>
+<span class="comment">% Original by Lieven Vandenberghe</span>
+<span class="comment">% Adapted for CVX by Joelle Skaf - 10/24/05</span>
+<span class="comment">% (a figure is generated)</span>
+<span class="comment">%</span>
+<span class="comment">% Placement problem with 6 free points, 8 fixed points and 27 links.</span>
+<span class="comment">% The coordinates of the free points minimize the sum of the squares of</span>
+<span class="comment">% Euclidean lengths of the links, i.e.</span>
+<span class="comment">%           minimize    sum_{i&lt;j) h(||x_i - x_j||)</span>
+<span class="comment">% where h(z) = z^4.</span>
+
+linewidth = 1;      <span class="comment">% in points;  width of dotted lines</span>
+markersize = 5;    <span class="comment">% in points;  marker size</span>
+
+fixed = [ 1   1  -1 -1    1   -1  -0.2  0.1; <span class="comment">% coordinates of fixed points</span>
+          1  -1  -1  1 -0.5 -0.2    -1    1]';
+M = size(fixed,1);  <span class="comment">% number of fixed points</span>
+N = 6;              <span class="comment">% number of free points</span>
+
+<span class="comment">% first N columns of A correspond to free points,</span>
+<span class="comment">% last M columns correspond to fixed points</span>
+
+A = [ 1  0  0 -1  0  0    0  0  0  0  0  0  0  0
+      1  0 -1  0  0  0    0  0  0  0  0  0  0  0
+      1  0  0  0 -1  0    0  0  0  0  0  0  0  0
+      1  0  0  0  0  0   -1  0  0  0  0  0  0  0
+      1  0  0  0  0  0    0 -1  0  0  0  0  0  0
+      1  0  0  0  0  0    0  0  0  0 -1  0  0  0
+      1  0  0  0  0  0    0  0  0  0  0  0  0 -1
+      0  1 -1  0  0  0    0  0  0  0  0  0  0  0
+      0  1  0 -1  0  0    0  0  0  0  0  0  0  0
+      0  1  0  0  0 -1    0  0  0  0  0  0  0  0
+      0  1  0  0  0  0    0 -1  0  0  0  0  0  0
+      0  1  0  0  0  0    0  0 -1  0  0  0  0  0
+      0  1  0  0  0  0    0  0  0  0  0  0 -1  0
+      0  0  1 -1  0  0    0  0  0  0  0  0  0  0
+      0  0  1  0  0  0    0 -1  0  0  0  0  0  0
+      0  0  1  0  0  0    0  0  0  0 -1  0  0  0
+      0  0  0  1 -1  0    0  0  0  0  0  0  0  0
+      0  0  0  1  0  0    0  0 -1  0  0  0  0  0
+      0  0  0  1  0  0    0  0  0 -1  0  0  0  0
+      0  0  0  1  0  0    0  0  0  0  0 -1  0  0
+      0  0  0  1  0 -1    0  0  0  0  0 -1  0  0        <span class="comment">% error in data!!!</span>
+      0  0  0  0  1 -1    0  0  0  0  0  0  0  0
+      0  0  0  0  1  0   -1  0  0  0  0  0  0  0
+      0  0  0  0  1  0    0  0  0 -1  0  0  0  0
+      0  0  0  0  1  0    0  0  0  0  0  0  0 -1
+      0  0  0  0  0  1    0  0 -1  0  0  0  0  0
+      0  0  0  0  0  1    0  0  0  0 -1  0  0  0 ];
+nolinks = size(A,1);    <span class="comment">% number of links</span>
+
+fprintf(1,<span class="string">'Computing the optimal locations of the 6 free points...'</span>);
+
+cvx_begin
+    variable <span class="string">x(N+M,2)</span>
+    minimize ( sum(square_pos(square_pos(norms( A*x,2,2 )))))
+    x(N+[1:M],:) == fixed;
+cvx_end
+
+fprintf(1,<span class="string">'Done! \n'</span>);
+
+<span class="comment">% Plots</span>
+free_sum = x(1:N,:);
+figure(1);
+dots = plot(free_sum(:,1), free_sum(:,2), <span class="string">'or'</span>, fixed(:,1), fixed(:,2), <span class="string">'bs'</span>);
+set(dots(1),<span class="string">'MarkerFaceColor'</span>,<span class="string">'red'</span>);
+hold <span class="string">on</span>
+legend(<span class="string">'Free points'</span>,<span class="string">'Fixed points'</span>,<span class="string">'Location'</span>,<span class="string">'Best'</span>);
+<span class="keyword">for</span> i=1:nolinks
+  ind = find(A(i,:));
+  line2 = plot(x(ind,1), x(ind,2), <span class="string">':k'</span>);
+  hold <span class="string">on</span>
+  set(line2,<span class="string">'LineWidth'</span>,linewidth);
+<span class="keyword">end</span>
+axis([-1.1 1.1 -1.1 1.1]) ;
+axis <span class="string">equal</span>;
+title(<span class="string">'Fourth-order placement problem'</span>);
+<span class="comment">% print -deps placement-quartic.eps</span>
+
+figure(2)
+all = [free_sum; fixed];
+bins = 0.05:0.1:1.95;
+lengths = sqrt(sum((A*all).^2')');
+[N2,hist2] = hist(lengths,bins);
+bar(hist2,N2);
+hold <span class="string">on</span>;
+xx = linspace(0,2,1000);  yy = (6/1.5^4)*xx.^4;
+plot(xx,yy,<span class="string">'--'</span>);
+axis([0 1.5 0 4.5]);
+hold <span class="string">on</span>
+plot([0 2], [0 0 ], <span class="string">'k-'</span>);
+title(<span class="string">'Distribution of the 27 link lengths'</span>);
+<span class="comment">% print -deps placement-quartic-hist.eps</span>
+</pre><pre class="codeoutput">Computing the optimal locations of the 6 free points... 
+Calling SDPT3: 297 variables, 147 equality constraints
+   For improved efficiency, SDPT3 is solving the dual problem.
+------------------------------------------------------------
+
+ num. of constraints = 147
+ dim. of sdp    var  = 108,   num. of sdp  blk  = 54
+ dim. of socp   var  = 81,   num. of socp blk  = 27
+ dim. of linear var  = 54
+*******************************************************************
+   SDPT3: Infeasible path-following algorithms
+*******************************************************************
+ version  predcorr  gam  expon  scale_data
+   HKM      1      0.000   1        0    
+it pstep dstep pinfeas dinfeas  gap      mean(obj)   cputime
+-------------------------------------------------------------------
+ 0|0.000|0.000|1.4e+01|6.6e+00|7.5e+03| 1.080000e+02| 0:0:00| chol  1  1 
+ 1|0.664|0.670|4.7e+00|2.2e+00|3.3e+03| 1.294054e+02| 0:0:00| chol  1  1 
+ 2|0.754|0.748|1.2e+00|5.7e-01|1.5e+03| 2.859040e+01| 0:0:00| chol  1  1 
+ 3|0.816|0.927|2.1e-01|4.3e-02|2.4e+02|-3.240148e+01| 0:0:00| chol  1  1 
+ 4|1.000|0.311|2.5e-06|2.9e-02|2.1e+02|-5.084695e+00| 0:0:00| chol  1  1 
+ 5|0.767|1.000|5.8e-07|1.0e-05|9.8e+01|-2.477078e+01| 0:0:00| chol  1  1 
+ 6|1.000|0.846|2.4e-08|2.6e-06|3.3e+01|-2.405122e+01| 0:0:00| chol  1  1 
+ 7|0.821|0.907|9.3e-09|3.4e-07|5.2e+00|-2.069173e+01| 0:0:00| chol  1  1 
+ 8|0.951|1.000|2.5e-09|1.2e-08|1.8e+00|-2.081896e+01| 0:0:00| chol  1  1 
+ 9|0.972|0.930|1.0e-09|2.3e-09|1.8e-01|-2.068494e+01| 0:0:01| chol  1  1 
+10|1.000|1.000|7.7e-15|3.0e-10|2.8e-02|-2.065029e+01| 0:0:01| chol  1  1 
+11|0.964|0.991|7.0e-15|1.4e-11|1.1e-03|-2.064631e+01| 0:0:01| chol  1  1 
+12|0.982|0.985|1.9e-14|1.2e-12|1.9e-05|-2.064632e+01| 0:0:01| chol  1  1 
+13|0.999|1.000|2.2e-12|1.0e-12|9.0e-07|-2.064632e+01| 0:0:01| chol  1  1 
+14|0.994|1.000|9.7e-12|1.0e-12|2.9e-08|-2.064632e+01| 0:0:01|
+  stop: max(relative gap, infeasibilities) &lt; 1.49e-08
+-------------------------------------------------------------------
+ number of iterations   = 14
+ primal objective value = -2.06463236e+01
+ dual   objective value = -2.06463236e+01
+ gap := trace(XZ)       = 2.85e-08
+ relative gap           = 6.75e-10
+ actual relative gap    = 6.64e-10
+ rel. primal infeas     = 9.69e-12
+ rel. dual   infeas     = 1.00e-12
+ norm(X), norm(y), norm(Z) = 4.1e+01, 8.4e+00, 1.5e+01
+ norm(A), norm(b), norm(C) = 2.0e+01, 6.2e+00, 1.0e+01
+ Total CPU time (secs)  = 0.8  
+ CPU time per iteration = 0.1  
+ termination code       =  0
+ DIMACS: 3.0e-11  0.0e+00  5.1e-12  0.0e+00  6.6e-10  6.7e-10
+-------------------------------------------------------------------
+------------------------------------------------------------
+Status: Solved
+Optimal value (cvx_optval): +20.6463
+Done! 
+</pre><img vspace="5" hspace="5" src="placement_quar_01.png"> <img vspace="5" hspace="5" src="placement_quar_02.png"> <p class="footer"><br>
+            Published with MATLAB&reg; 7.5<br></p>
+      </div>
+      <!--
+##### SOURCE BEGIN #####
+%% Figure 8.17: Fourth-order placement problem
+
+% Section 8.7.3, Boyd & Vandenberghe "Convex Optimization"
+% Original by Lieven Vandenberghe
+% Adapted for CVX by Joelle Skaf - 10/24/05
+% (a figure is generated)
+%
+% Placement problem with 6 free points, 8 fixed points and 27 links.
+% The coordinates of the free points minimize the sum of the squares of
+% Euclidean lengths of the links, i.e.
+%           minimize    sum_{i<j) h(||x_i - x_j||)
+% where h(z) = z^4.
+
+linewidth = 1;      % in points;  width of dotted lines
+markersize = 5;    % in points;  marker size
+
+fixed = [ 1   1  -1 -1    1   -1  -0.2  0.1; % coordinates of fixed points
+          1  -1  -1  1 -0.5 -0.2    -1    1]';
+M = size(fixed,1);  % number of fixed points
+N = 6;              % number of free points
+
+% first N columns of A correspond to free points,
+% last M columns correspond to fixed points
+
+A = [ 1  0  0 -1  0  0    0  0  0  0  0  0  0  0
+      1  0 -1  0  0  0    0  0  0  0  0  0  0  0
+      1  0  0  0 -1  0    0  0  0  0  0  0  0  0
+      1  0  0  0  0  0   -1  0  0  0  0  0  0  0
+      1  0  0  0  0  0    0 -1  0  0  0  0  0  0
+      1  0  0  0  0  0    0  0  0  0 -1  0  0  0
+      1  0  0  0  0  0    0  0  0  0  0  0  0 -1
+      0  1 -1  0  0  0    0  0  0  0  0  0  0  0
+      0  1  0 -1  0  0    0  0  0  0  0  0  0  0
+      0  1  0  0  0 -1    0  0  0  0  0  0  0  0
+      0  1  0  0  0  0    0 -1  0  0  0  0  0  0
+      0  1  0  0  0  0    0  0 -1  0  0  0  0  0
+      0  1  0  0  0  0    0  0  0  0  0  0 -1  0
+      0  0  1 -1  0  0    0  0  0  0  0  0  0  0
+      0  0  1  0  0  0    0 -1  0  0  0  0  0  0
+      0  0  1  0  0  0    0  0  0  0 -1  0  0  0
+      0  0  0  1 -1  0    0  0  0  0  0  0  0  0
+      0  0  0  1  0  0    0  0 -1  0  0  0  0  0
+      0  0  0  1  0  0    0  0  0 -1  0  0  0  0
+      0  0  0  1  0  0    0  0  0  0  0 -1  0  0
+      0  0  0  1  0 -1    0  0  0  0  0 -1  0  0        % error in data!!!
+      0  0  0  0  1 -1    0  0  0  0  0  0  0  0
+      0  0  0  0  1  0   -1  0  0  0  0  0  0  0
+      0  0  0  0  1  0    0  0  0 -1  0  0  0  0
+      0  0  0  0  1  0    0  0  0  0  0  0  0 -1
+      0  0  0  0  0  1    0  0 -1  0  0  0  0  0
+      0  0  0  0  0  1    0  0  0  0 -1  0  0  0 ];
+nolinks = size(A,1);    % number of links
+
+fprintf(1,'Computing the optimal locations of the 6 free points...');
+
+cvx_begin
+    variable x(N+M,2)
+    minimize ( sum(square_pos(square_pos(norms( A*x,2,2 )))))
+    x(N+[1:M],:) == fixed;
+cvx_end
+
+fprintf(1,'Done! \n');
+
+% Plots
+free_sum = x(1:N,:);
+figure(1);
+dots = plot(free_sum(:,1), free_sum(:,2), 'or', fixed(:,1), fixed(:,2), 'bs');
+set(dots(1),'MarkerFaceColor','red');
+hold on
+legend('Free points','Fixed points','Location','Best');
+for i=1:nolinks
+  ind = find(A(i,:));
+  line2 = plot(x(ind,1), x(ind,2), ':k');
+  hold on
+  set(line2,'LineWidth',linewidth);
+end
+axis([-1.1 1.1 -1.1 1.1]) ;
+axis equal;
+title('Fourth-order placement problem');
+% print -deps placement-quartic.eps
+
+figure(2)
+all = [free_sum; fixed];
+bins = 0.05:0.1:1.95;
+lengths = sqrt(sum((A*all).^2')');
+[N2,hist2] = hist(lengths,bins);
+bar(hist2,N2);
+hold on;
+xx = linspace(0,2,1000);  yy = (6/1.5^4)*xx.^4;
+plot(xx,yy,'REPLACE_WITH_DASH_DASH');
+axis([0 1.5 0 4.5]);
+hold on
+plot([0 2], [0 0 ], 'k-');
+title('Distribution of the 27 link lengths');
+% print -deps placement-quartic-hist.eps
+
+##### SOURCE END #####
+-->
+   </body>
+</html>

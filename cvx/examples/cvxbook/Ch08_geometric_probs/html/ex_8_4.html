@@ -1,0 +1,272 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN">
+<html xmlns:mwsh="http://www.mathworks.com/namespace/mcode/v1/syntaxhighlight.dtd">
+   <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   
+      <!--
+This HTML is auto-generated from an M-file.
+To make changes, update the M-file and republish this document.
+      -->
+      <title>Example 8.4: One free point localization</title>
+      <meta name="generator" content="MATLAB 7.5">
+      <meta name="date" content="2008-05-23">
+      <meta name="m-file" content="ex_8_4"><style>
+
+body {
+  background-color: white;
+  margin:10px;
+}
+
+h1 {
+  color: #990000; 
+  font-size: x-large;
+}
+
+h2 {
+  color: #990000;
+  font-size: medium;
+}
+
+/* Make the text shrink to fit narrow windows, but not stretch too far in 
+wide windows. */ 
+p,h1,h2,div.content div {
+  max-width: 600px;
+  /* Hack for IE6 */
+  width: auto !important; width: 600px;
+}
+
+pre.codeinput {
+  background: #EEEEEE;
+  padding: 10px;
+}
+@media print {
+  pre.codeinput {word-wrap:break-word; width:100%;}
+} 
+
+span.keyword {color: #0000FF}
+span.comment {color: #228B22}
+span.string {color: #A020F0}
+span.untermstring {color: #B20000}
+span.syscmd {color: #B28C00}
+
+pre.codeoutput {
+  color: #666666;
+  padding: 10px;
+}
+
+pre.error {
+  color: red;
+}
+
+p.footer {
+  text-align: right;
+  font-size: xx-small;
+  font-weight: lighter;
+  font-style: italic;
+  color: gray;
+}
+
+  </style></head>
+   <body>
+      <div class="content">
+         <h1>Example 8.4: One free point localization</h1><pre class="codeinput"><span class="comment">% Section 8.7.1, Boyd &amp; Vandenberghe "Convex Optimization"</span>
+<span class="comment">% Joelle Skaf - 10/23/05</span>
+<span class="comment">%</span>
+<span class="comment">% K fixed points (u1,v1),..., (uK,vK) in R^2 are given and the goal is to place</span>
+<span class="comment">% one additional point (u,v) such that:</span>
+<span class="comment">% 1) the L1-norm is minimized, i.e.</span>
+<span class="comment">%           minimize    sum_{i=1}^K ( |u - u_i| + |v - v_i| )</span>
+<span class="comment">%    the solution in this case is any median of the fixed points</span>
+<span class="comment">% 2) the L2-norm is minimized, i.e.</span>
+<span class="comment">%           minimize    sum_{i=1}^K ( |u - u_i|^2 + |v - v_i|^2 )^.5</span>
+<span class="comment">%    the solution in this case is the Weber point of the fixed points</span>
+
+<span class="comment">% Data generation</span>
+n = 2;
+K = 11;
+randn(<span class="string">'state'</span>,0);
+P = randn(n,K);
+
+<span class="comment">% L1 - norm</span>
+fprintf(1,<span class="string">'Minimizing the L1-norm of the sum of the distances to fixed points...'</span>);
+
+cvx_begin
+    variable <span class="string">x1(2)</span>
+    minimize ( sum(norms(x1*ones(1,K) - P,1)) )
+cvx_end
+
+fprintf(1,<span class="string">'Done! \n'</span>);
+
+<span class="comment">% L2 - norm</span>
+fprintf(1,<span class="string">'Minimizing the L2-norm of the sum of the distances to fixed points...'</span>);
+
+cvx_begin
+    variable <span class="string">x2(2)</span>
+    minimize ( sum(norms(x2*ones(1,K) - P,2)) )
+cvx_end
+
+fprintf(1,<span class="string">'Done! \n'</span>);
+
+<span class="comment">% Displaying results</span>
+disp(<span class="string">'------------------------------------------------------------------'</span>);
+disp(<span class="string">'The optimal point location for the L1-norm case is: '</span>);
+disp(x1);
+disp(<span class="string">'The optimal point location for the L2-norm case is: '</span>);
+disp(x2);
+</pre><pre class="codeoutput">Minimizing the L1-norm of the sum of the distances to fixed points... 
+Calling SDPT3: 46 variables, 22 equality constraints
+------------------------------------------------------------
+
+ num. of constraints = 22
+ dim. of socp   var  = 44,   num. of socp blk  = 22
+ dim. of free   var  =  2 *** convert ublk to lblk
+*******************************************************************
+   SDPT3: Infeasible path-following algorithms
+*******************************************************************
+ version  predcorr  gam  expon  scale_data
+    NT      1      0.000   1        0    
+it pstep dstep pinfeas dinfeas  gap      mean(obj)   cputime
+-------------------------------------------------------------------
+ 0|0.000|0.000|8.0e-01|4.2e+00|3.8e+02| 2.475938e+01| 0:0:00| chol  1  1 
+ 1|1.000|0.814|6.8e-07|8.6e-01|9.2e+01| 3.250087e+01| 0:0:00| chol  1  1 
+ 2|1.000|0.994|2.2e-07|1.4e-02|9.9e+00| 1.555407e+01| 0:0:00| chol  1  1 
+ 3|0.853|0.559|3.7e-07|6.8e-03|2.6e+00| 1.351595e+01| 0:0:00| chol  1  1 
+ 4|1.000|0.241|8.4e-07|5.2e-03|1.5e+00| 1.334302e+01| 0:0:00| chol  1  1 
+ 5|0.831|0.588|1.5e-07|2.2e-03|6.0e-01| 1.364061e+01| 0:0:00| chol  1  1 
+ 6|0.999|0.788|9.0e-10|4.6e-04|1.2e-01| 1.381465e+01| 0:0:00| chol  1  1 
+ 7|0.985|0.982|1.8e-10|8.4e-06|2.2e-03| 1.386713e+01| 0:0:00| chol  1  1 
+ 8|0.989|0.989|3.8e-11|7.9e-06|2.9e-05| 1.386809e+01| 0:0:00| chol  1  1 
+ 9|1.000|0.989|1.0e-12|1.1e-07|4.7e-07| 1.386810e+01| 0:0:00| chol  1  1 
+10|0.549|0.945|4.7e-13|1.7e-09|7.0e-08| 1.386810e+01| 0:0:00|
+  stop: max(relative gap, infeasibilities) &lt; 1.49e-08
+-------------------------------------------------------------------
+ number of iterations   = 10
+ primal objective value =  1.38681000e+01
+ dual   objective value =  1.38680999e+01
+ gap := trace(XZ)       = 7.00e-08
+ relative gap           = 2.44e-09
+ actual relative gap    = 2.37e-09
+ rel. primal infeas     = 4.71e-13
+ rel. dual   infeas     = 1.72e-09
+ norm(X), norm(y), norm(Z) = 5.8e+00, 4.5e+00, 6.5e+00
+ norm(A), norm(b), norm(C) = 9.1e+00, 5.1e+00, 5.7e+00
+ Total CPU time (secs)  = 0.2  
+ CPU time per iteration = 0.0  
+ termination code       =  0
+ DIMACS: 7.5e-13  0.0e+00  4.9e-09  0.0e+00  2.4e-09  2.4e-09
+-------------------------------------------------------------------
+------------------------------------------------------------
+Status: Solved
+Optimal value (cvx_optval): +13.8681
+Done! 
+Minimizing the L2-norm of the sum of the distances to fixed points... 
+Calling SDPT3: 33 variables, 13 equality constraints
+   For improved efficiency, SDPT3 is solving the dual problem.
+------------------------------------------------------------
+
+ num. of constraints = 13
+ dim. of socp   var  = 33,   num. of socp blk  = 11
+*******************************************************************
+   SDPT3: Infeasible path-following algorithms
+*******************************************************************
+ version  predcorr  gam  expon  scale_data
+    NT      1      0.000   1        0    
+it pstep dstep pinfeas dinfeas  gap      mean(obj)   cputime
+-------------------------------------------------------------------
+ 0|0.000|0.000|5.6e-01|3.4e+00|9.7e+01| 0.000000e+00| 0:0:00| chol  1  1 
+ 1|1.000|0.929|1.1e-07|3.0e-01|1.0e+01|-9.009752e+00| 0:0:00| chol  1  1 
+ 2|0.926|0.858|2.5e-07|4.8e-02|1.4e+00|-1.103897e+01| 0:0:00| chol  1  1 
+ 3|0.862|0.969|8.5e-08|2.1e-03|1.7e-01|-1.143853e+01| 0:0:00| chol  1  1 
+ 4|0.954|0.964|9.6e-08|1.4e-04|7.3e-03|-1.148135e+01| 0:0:00| chol  1  1 
+ 5|0.948|0.980|2.3e-08|9.1e-06|3.1e-04|-1.148377e+01| 0:0:00| chol  1  1 
+ 6|0.923|0.965|6.4e-09|3.3e-07|2.2e-05|-1.148392e+01| 0:0:00| chol  1  1 
+ 7|0.871|0.978|1.6e-09|8.6e-09|3.1e-06|-1.148393e+01| 0:0:00| chol  1  2 
+ 8|0.822|0.989|4.5e-10|4.1e-10|4.8e-07|-1.148393e+01| 0:0:00| chol  2  2 
+ 9|0.955|0.985|4.1e-11|9.7e-11|3.0e-08|-1.148393e+01| 0:0:00|
+  stop: max(relative gap, infeasibilities) &lt; 1.49e-08
+-------------------------------------------------------------------
+ number of iterations   =  9
+ primal objective value = -1.14839292e+01
+ dual   objective value = -1.14839293e+01
+ gap := trace(XZ)       = 3.00e-08
+ relative gap           = 1.25e-09
+ actual relative gap    = 1.18e-09
+ rel. primal infeas     = 4.06e-11
+ rel. dual   infeas     = 9.70e-11
+ norm(X), norm(y), norm(Z) = 4.7e+00, 4.1e+00, 5.8e+00
+ norm(A), norm(b), norm(C) = 6.7e+00, 4.3e+00, 5.1e+00
+ Total CPU time (secs)  = 0.2  
+ CPU time per iteration = 0.0  
+ termination code       =  0
+ DIMACS: 8.8e-11  0.0e+00  1.6e-10  0.0e+00  1.2e-09  1.3e-09
+-------------------------------------------------------------------
+------------------------------------------------------------
+Status: Solved
+Optimal value (cvx_optval): +11.4839
+Done! 
+------------------------------------------------------------------
+The optimal point location for the L1-norm case is: 
+   -0.0956
+    0.1139
+
+The optimal point location for the L2-norm case is: 
+    0.1252
+    0.1716
+
+</pre><p class="footer"><br>
+            Published with MATLAB&reg; 7.5<br></p>
+      </div>
+      <!--
+##### SOURCE BEGIN #####
+%% Example 8.4: One free point localization
+
+% Section 8.7.1, Boyd & Vandenberghe "Convex Optimization"
+% Joelle Skaf - 10/23/05
+%
+% K fixed points (u1,v1),..., (uK,vK) in R^2 are given and the goal is to place
+% one additional point (u,v) such that:
+% 1) the L1-norm is minimized, i.e.
+%           minimize    sum_{i=1}^K ( |u - u_i| + |v - v_i| )
+%    the solution in this case is any median of the fixed points
+% 2) the L2-norm is minimized, i.e.
+%           minimize    sum_{i=1}^K ( |u - u_i|^2 + |v - v_i|^2 )^.5
+%    the solution in this case is the Weber point of the fixed points
+
+% Data generation
+n = 2;
+K = 11;
+randn('state',0);
+P = randn(n,K);
+
+% L1 - norm
+fprintf(1,'Minimizing the L1-norm of the sum of the distances to fixed points...');
+
+cvx_begin
+    variable x1(2)
+    minimize ( sum(norms(x1*ones(1,K) - P,1)) )
+cvx_end
+
+fprintf(1,'Done! \n');
+
+% L2 - norm
+fprintf(1,'Minimizing the L2-norm of the sum of the distances to fixed points...');
+
+cvx_begin
+    variable x2(2)
+    minimize ( sum(norms(x2*ones(1,K) - P,2)) )
+cvx_end
+
+fprintf(1,'Done! \n');
+
+% Displaying results
+disp('REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASH');
+disp('The optimal point location for the L1-norm case is: ');
+disp(x1);
+disp('The optimal point location for the L2-norm case is: ');
+disp(x2);
+##### SOURCE END #####
+-->
+   </body>
+</html>
