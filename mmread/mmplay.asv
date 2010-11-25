@@ -1,0 +1,9 @@
+function movie = mmplay(filename, frames)
+if isempty(frames)
+    movie = mmread(filename);
+else
+    movie = mmread(filename, frames);
+end
+
+g = figure;
+for i = 1: movie.
