@@ -24,7 +24,6 @@ while 1
           STIPVector = cat(1, STIPVector, {tlineNum(10 : end)});
         case 'trajectory'
             tSTIPVector = tlineNum(10:end);
-%             tSTIPVector = 120 + 1 - tSTIPVector;
             tSTIPVector = reshape(tSTIPVector, 2, [])';
             STIPVector = cat(1, STIPVector, {tSTIPVector});
     end
@@ -32,9 +31,9 @@ while 1
 end
 
 if Filt == 1
-%     [~, idx] = sort(Conf);
-%     idx = idx(1 : 20);
-    idx = find(Conf >= 3 * mean(Conf));
+    [A idx] = sort(Conf);
+    idx = idx(1 : 
+%     idx = find(Conf >= mean(Conf));
     FeaturePoint = FeaturePoint(idx, :);
     FilterPara = FilterPara(idx, :);
     Conf = Conf(idx, :);

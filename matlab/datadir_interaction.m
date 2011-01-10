@@ -19,7 +19,7 @@ function dir = datadir_interaction( set_ind, varargin )
 ComputerName = getComputerName();
 % classes = 7; for special Settings. Boxing Waving walking Running.
 switch deblank(ComputerName)
-    case 'lbl1985-office'
+    case 'lbl1985-pc'
         workingpath = 'C:\Users\lbl1985\Documents\MATLAB\work\';
     case 'binlong-desktop'
         workingpath = '/media/A642E42A42E3FD45/Users/Binlong/Documents/MATLAB/work/';
