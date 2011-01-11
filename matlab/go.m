@@ -1,7 +1,11 @@
 function go(str)
 
 if isunix
-    workingpath = '/media/A642E42A42E3FD45/Users/Binlong/Documents/MATLAB';
+    workingpath = 'C:\Users\lbl1985\Documents\MATLAB\';
+end
+
+if ispc
+    workingpath = 'C:\Users\lbl1985\Documents\MATLAB\';
 end
 
 switch str

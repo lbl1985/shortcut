@@ -1,0 +1,651 @@
+function R_labelShow = ideaShow(R_label, mode, varargin)
+% Additional Parameter(s):
+% case 'CentroidTwoColumns'
+%   I = varargin{1};        The Background Image to put marks on
+% case 'BoundingBox'
+%   Bounding = varargin{1}; The BoundingBox Info.
+%   show = varargin{2};     Decide whether to show the visulization
+% case 'labelmatrix':
+%   show = varargin{1};     Decide whether to show the visulization
+%
+% Try GIT.
+if ndims(R_label) == 2
+    nframe = length(R_label);
+else
+    nframe = size(R_label, 3);
+end
+
+try
+    
+    switch mode
+        case 'LabelMatrix'
+            R_labelShow = zeros(size(R_label));
+            for i = 1 : nframe
+                tR = R_label(:, :, i);
+                maxValue = max(tR(:));
+                interval = floor(255 / maxValue);
+                tR = tR .* interval;
+                R_labelShow(:, :, i) = tR;
+            end
+            playM_asVideo(R_labelShow);
+        case 'Centroid'
+            I = varargin{1};
+            %         I = imshrink( I, [2 2 1] );
+            for i = 1 : nframe
+                tI = I(:, :, i);
+                imshow(tI);
+                nR_label = length(R_label{i});
+                if nR_label ~= 0
+                    hold on
+                    for j = 1 : nR_label
+                        plot(R_label{i}(j).Centroid(1), R_label{i}(j).Centroid(2), 'b*');
+                    end
+                    hold off
+                end
+                pause(1/22);
+                R_labelShow = 0;
+            end
+        case 'CentroidTwoColumns'
+            I = varargin{1};
+            for i = 1 : nframe
+                tI = I(:, :, i);
+                imshow(tI); title(['Frame ' num2str(i)]);
+                hold on
+                plot(R_label(i, 1), R_label(i, 2), 'b*');
+                hold off
+                pause(1/22);
+                R_labelShow = 0;
+            end
+        case 'MaxIntensity'
+            I = varargin{1};
+            %         I = imshrink( I, [2 2 1] );
+            for i = 1 : nframe
+                tI = I(:, :, i);
+                imshow(tI);
+                nR_label = length(R_label{i});
+                if nR_label ~= 0
+                    hold on
+                    for j = 1 : nR_label
+                        plot(R_label{i}(j).MaxIntensityPos(1), R_label{i}(j).MaxIntensityPos(2), 'b*');
+                    end
+                    hold off
+                end
+                pause(1/11);
+                R_labelShow = 0;
+                %             display(['i = ', num2str(i)]);
+            end
+        case 'Corresponse'
+            I = varargin{1};
+            rec = varargin{2};
+            Arrangement = 'Vertical';
+            %         I = imshrink(I, [2 2 1]);
+            switch Arrangement
+                case 'Horizontal'
+                    extend = size(I, 2);
+                case 'Vertical'
+                    extend = size(I, 1);
+            end
+            
+            if rec
+                aviobj = avifile('RunningTrackingAfter1.avi', 'fps', 15, 'compression', 'none');
+            end
+            
+            for i = 1 : nframe
+                if isfield(R_label{i}, 'posBefore') && isfield(R_label{i}, 'posAfter')
+                    switch Arrangement
+                        case 'Horizontal'
+                            tempImage = [I(: ,:, i - 1) I(:, :, i) I(:, :, i + 1)];
+                        case 'Vertical'
+                            tempImage = [I(: ,:, i - 1); I(:, :, i); I(:, :, i + 1)];
+                    end
+                    imshow(tempImage);  title(['Frame ' num2str(i)]);
+                    nR_label = length(R_label{i});
+                    hold on;
+                    for j = 1 : nR_label
+                        posCur = R_label{i}(j).MaxIntensityPos;
+                        switch Arrangement
+                            case 'Horizontal'
+                                plot(posCur(1) + extend, posCur(2), 'b*');
+                            case 'Vertical'
+                                plot(posCur(1), posCur(2) + extend, 'b*');
+                        end
+                        if isfield(R_label{i}, 'posBefore')
+                            posBefore = R_label{i}(j).posBefore;
+                            switch Arrangement
+                                case 'Horizontal'
+                                    plot(posBefore(1), posBefore(2), 'rx');
+                                    line([posBefore(1) posCur(1) + extend], [posBefore(2) posCur(2) ], 'LineStyle', '-', 'Color', customColorMap(j));
+                                case 'Vertical'
+                                    plot(posBefore(1), posBefore(2), 'rx');
+                                    line([posBefore(1) posCur(1)], [posBefore(2) posCur(2)  + extend ], 'LineStyle', '-', 'Color', customColorMap(j));
+                            end
+                        end
+                        if isfield(R_label{i}, 'posAfter')
+                            posAfter = R_label{i}(j).posAfter;
+                            switch Arrangement
+                                case 'Horizontal'
+                                    plot(posAfter(1) + 2 * extend, posAfter(2), 'gv');
+                                    line([posCur(1) + extend posAfter(1) + 2 * extend], [posCur(2) posAfter(2) ], 'LineStyle', '-', 'Color', customColorMap(j));
+                                case 'Vertical'
+                                    plot(posAfter(1), posAfter(2) + 2 * extend, 'gv');
+                                    line([posCur(1) posAfter(1)], [posCur(2) + extend posAfter(2) + 2 * extend], 'LineStyle', '-', 'Color', customColorMap(j));
+                            end
+                        end
+                    end
+                    
+                    if rec
+                        frame = getframe(gcf);
+                        aviobj = addframe(aviobj, frame);
+                    end
+                    
+                    hold off;
+                end
+                pause(1/5);
+            end
+            R_labelShow = 0;
+            
+            if rec
+                R_labelShow = close(aviobj);
+            end
+        case 'BoundingBox'
+            R_labelShow = uint8(zeros(size(R_label)));
+            BoundingBox = varargin{1};
+            if length(varargin) == 1
+                show = 1;
+            else
+                show = varargin{2};
+            end
+            %         figure;
+            for i = 1 : nframe
+                tR_label = R_label(:, :, i);
+                R_labelShow(:, :, i) = drawbox(tR_label, BoundingBox(i, 1:2), BoundingBox(i, 3:4));
+                if show
+                    imshow(R_labelShow(:, :, i));
+                    title(['Frame ' num2str(i)]);
+                    pause(1/22);
+                end
+            end
+        case 'labelmatrix'
+            if isempty(varargin)
+                show = 1;
+            else
+                show = varargin{1};
+            end
+            nframes = length(R_label);
+            R_labelShow = zeros([R_label(1).ImageSize nframes]);
+            for i = 1 : nframes
+                R_labelShow(:, :, i) = labelmatrix(R_label(i));
+                if show
+                    imshow(R_labelShow(:, :, i)); title(['Frame ' num2str(i)]);
+                    pause(1/11);
+                end
+            end
+        case 'HankelShow'
+            if length(varargin{1}) < 2
+                rec = 0;
+            else
+                rec = varargin{2};
+            end
+            groupsLabel = varargin{1};
+            if ~isequal(length(R_label), length(groupsLabel));
+                error('Length of HankelMatrixBatch should be equal to Length of  groupsLabel');
+            end
+            if rec
+                aviobj = avifile('HankelShow2.avi', 'fps', 15, 'compression', 'none');
+            end
+            groupOLD = -1;
+            for i = 1 : length(R_label)
+                if groupOLD ~= groupsLabel(i)
+                    groupOLD = groupsLabel(i); count = 1;
+                end
+                imshow(R_label{i});
+                title(['Type ' num2str(groupsLabel(i)) ' Clip ' num2str(count)]);
+                count = count + 1;
+                if rec
+                    frame = getframe(gcf);
+                    aviobj = addframe(aviobj, frame);
+                end
+                pause(1/11);
+            end
+            if rec
+                R_labelShow = close(aviobj);
+            end
+        case 'subHankelShow'
+            if length(varargin) < 2
+                rec = 0;
+            else
+                rec = varargin{2};
+            end
+            groupsLabel = varargin{1};
+            if ~isequal(length(R_label), length(groupsLabel));
+                error('Length of HankelMatrixBatch should be equal to Length of  groupsLabel');
+            end
+            if rec
+                aviobj = avifile('subHankelShow.avi', 'fps', 15, 'compression', 'none');
+            end
+            groupOLD = -1;
+            for i = 1 : length(R_label)
+                if groupOLD ~= groupsLabel(i)
+                    groupOLD = groupsLabel(i); count = 1;
+                end
+                for j = 1 : length(R_label{i})
+                    imshow(R_label{i}{j});
+                    title(['Type ' num2str(groupsLabel(i)) ' Clip ' ...
+                        num2str(count) ' Section' num2str(j)]);
+                    if rec
+                        frame = getframe(gcf);
+                        aviobj = addframe(aviobj, frame);
+                    end
+                    pause(1/11);
+                end
+                count = count + 1;
+            end
+            if rec
+                R_labelShow = close(aviobj);
+            end
+        case 'EigenVectorVisualization'
+            if length(varargin) < 2
+                rec = 0;
+            else
+                rec = varargin{2};
+            end
+            
+            if rec
+                aviobj = avifile('EigenVectorVisualization.avi', 'fps', 15, 'compression', 'none');
+            end
+            
+            pca_dim = varargin{1}; count = 1;
+            for i = 1 : size(R_label, 2)
+                imshow(reshape(R_label(:, i), 60, 60));
+                title(['Type ' num2str(floor(i / pca_dim)) ' EigenVector ' ...
+                    num2str(count)]);
+                if mod(i, pca_dim) == 0
+                    count = 1;
+                else
+                    count = count + 1;
+                end
+                if rec
+                    frame = getframe(gcf);
+                    aviobj = addframe(aviobj, frame);
+                end
+                pause(1/11);
+            end
+            if rec
+                R_labelShow = close(aviobj);
+            end
+        case 'VariousH_Comparison'
+            if length(varargin) < 4
+                error('You should input: "HankelMatrixBatchDCC, VariousH_Comparison, T, pca_dim" Four parameters');
+            end
+            T = varargin{1}; pca_dim = varargin{2};
+            rec = varargin{3}; mode2 = varargin{4};
+            HankelMatrixBatchDCC = R_label;
+            
+            %             HankelMatrixBatchDCCBackup = HankelMatrixBatchDCC;
+            %             HankelMatrixBatchDCCTemp = HankelMatrixBatchDCC(1:150);
+            %             HankelMatrixBatchDCCTemp = cat(1, HankelMatrixBatchDCCTemp, HankelMatrixBatchDCC(150));
+            %             HankelMatrixBatchDCCTemp = cat(1, HankelMatrixBatchDCCTemp, HankelMatrixBatchDCC(151:end));
+            %             HankelMatrixBatchDCC = HankelMatrixBatchDCCTemp;
+            
+            nvideo = length(HankelMatrixBatchDCC);
+            if nvideo  == 400
+                groups = [0* ones(100, 1); 1 * ones(100, 1); 2 * ones(100, 1); 3 * ones(100, 1)];
+            elseif nvideo == 594
+                groups = [0 * ones(99, 1); 1 * ones(99, 1); 2 * ones(99, 1); 3 * ones(99, 1); 4 * ones(99, 1); 5 * ones(99, 1)];
+            end
+            
+            
+            H_tuda = cell(nvideo, 1); H_hat = H_tuda; H_bar = H_tuda;
+            S_batch = cell(nvideo, 1); S_tuda = cell(nvideo, 1);
+            S_hat = S_tuda; S_bar = S_tuda;
+            
+            for i = 1 : nvideo
+                [U S V] = svd(HankelMatrixBatchDCC{i});
+                S_batch{i} = diag(S);
+                H_tuda{i} = U(:, 1 : pca_dim) * S(1:pca_dim, 1 : pca_dim) * V(:, 1:pca_dim)';
+                [U S V] = svd(HankelMatrixBatchDCC{i} * HankelMatrixBatchDCC{i}');
+                H_hat{i} = U(:, 1 : pca_dim) * sqrt(S(1:pca_dim, 1:pca_dim));
+                H_bar{i} = T' * HankelMatrixBatchDCC{i};
+                S_tuda{i} = svd(H_tuda{i}); S_hat{i} = svd(H_hat{i});   S_bar{i} = svd(H_bar{i});
+                display(['Finish ' num2str(i)]);
+            end
+            switch mode2
+                case 'VariousHankelComparisionOfSameVideo'
+                    if rec
+                        aviobj = avifile('VariousHankelComparisionOfSameVideo5.avi', 'fps', 15, 'compression', 'none');
+                    end
+                    fVariousH = figure;
+                    for i = 1 : nvideo
+                        plot(1:length(S_batch{i}), S_batch{i}, 'rx-');
+                        hold on; plot(1:length(S_tuda{i}), S_tuda{i}, 'b+:');
+                        plot(1:length(S_hat{i}), S_hat{i}, 'k^-.');
+                        plot(1:length(S_bar{i}), S_bar{i}, 'md--'); hold off;
+                        legend('S', 'S tuda', 'S hat', 'S bar');
+                        legend('H', 'UDV''', 'PSigma(-1/2)', 'T''H');
+                        Type = floor(i/100); Clip = mod(i, 100); if Clip == 0, Clip = 100; Type = Type - 1;end
+                        title(['Various Hankel Comparision for Type ' num2str(Type) ' Clip ' num2str(Clip)]);
+                        if rec
+                            frame = getframe(gcf);
+                            aviobj = addframe(aviobj, frame);
+                        end
+                        pause(1/11);
+                    end
+                case 'H_VS_HBarOfDiffTypes'
+                    if rec
+                        aviobj = avifile('H_VS_HBarOfDiffTypes5.avi', 'fps', 15, 'compression', 'None');
+                    end
+                    for i = 1 : 100
+                        
+                        subplot(1, 2, 1);
+                        plot(1:length(S_batch{i}), S_batch{i}, 'rx-'); hold on;
+                        plot(1:length(S_batch{i + 100}), S_batch{i + 100}, 'b+:');
+                        plot(1:length(S_batch{i + 200}), S_batch{i + 200}, 'k^-.');
+                        plot(1:length(S_batch{i + 300}), S_batch{i + 300}, 'md--'); hold off;
+                        legend('Boxing', 'Clapping', 'Waving', 'Walking');
+                        subplot(1, 2, 2);
+                        plot(1:length(S_bar{i}), S_bar{i}, 'rx-'); hold on;
+                        plot(1:length(S_bar{i + 100}), S_bar{i + 100}, 'b+:');
+                        plot(1:length(S_bar{i + 200}), S_bar{i + 200}, 'k^-.');
+                        plot(1:length(S_bar{i + 300}), S_bar{i + 300}, 'md--'); hold off;
+                        legend('Boxing', 'Clapping', 'Waving', 'Walking');
+                        title(['Hankel VS. T''*Hankel For Clip ' num2str(i) ' Different Types']);
+                        if rec
+                            frame = getframe(gcf);
+                            aviobj = addframe(aviobj, frame);
+                        end
+                        pause(1/11);
+                    end
+                case 'SystemDynamics'   
+                    % Example: close all; ideaShow(HankelMatrixBatchDCC,
+                    % 'VariousH_Comparison', eye(144), 15, 0, 'SystemDynamics')
+                    % 12 Aug 2010
+%                     S_batchNormal = cell(nvideo, 1); 
+                    kb = -1; fig = figure(); 
+                    for i = 1 : nvideo
+                        % Normalization by sum(\sigma .^2) = 1
+                        SNormal = (S_batch{i} .^ 2) / sum(S_batch{i} .^2 );
+                        k = groups(i); 
+                        if k ~= kb  
+                            figure(fig);
+                            subplot(3, 2, k + 1);  axis([0 50 -0.05 1.05])
+                            kb = k; title(['Type ' num2str(k)]);
+                        else
+                            figure(fig);
+                            subplot(3, 2, k + 1);
+                        end
+                        hold on;
+                        plot((1 : min([50, length(SNormal)])), SNormal(1: min([50, length(SNormal)])));
+                        % Setting the threshold, for \sigma_max \times 0.05
+                        thold = SNormal(1) * .05;
+                        % Finding the firstly point less than the
+                        % threshold.
+                        Dpoint = find((SNormal - thold) < 0);
+                        Dpoint = Dpoint(1);
+                        plot(Dpoint, SNormal(Dpoint), 'rx');
+                        hold off
+                    end
+                    
+                case 'Hankelness-H'
+                    subH = HankelCrop(HankelMatrixBatchDCC, 60);
+                    ideaShow(subH, 'subHankelShow', groups, rec);
+                case 'Hankelness-H_tuda'
+                    subH_tuda = HankelCrop(H_tuda, 60);
+                    ideaShow(subH_tuda, 'subHankelShow', groups, rec);
+                case 'Hankelness-H_bar'
+                    subH_bar = HankelCrop(H_bar, 60);
+                    ideaShow(subH_bar, 'subHankelShow', groups, rec);
+            end
+            if rec
+                R_labelShow = close(aviobj);
+            end
+        case 'pcadim_pcadimSVM_figure'
+            R_label = R_label.mean;
+            modeP = varargin{1};            
+            pcadim_SVMlength = size(R_label, 1);
+            dlength = size(R_label, 2);
+            figure; hold on;
+            for i = [1 : 5 6: 5: pcadim_SVMlength]                
+                plot([1 : dlength], R_label(i, :), '*', 'LineStyle', '-', 'Color', customColorMap(i));
+            end
+            hold off; 
+            hold on; plot((1 : dlength), 0.921*ones(dlength, 1), '-');
+            title([modeP.filename 'First5 is ' num2str(modeP.First5)]);
+            xlabel('d'); ylabel('Accuracy Rate'); 
+            pcadim_SVM = [1 : 5 6: 5: pcadim_SVMlength] ;
+            comm = ['legend(''recog_dim' num2str(pcadim_SVM(1)) ''','];
+            for i = 2 : length(pcadim_SVM)
+                comm = [comm '''recog_dim' num2str(pcadim_SVM(i)) ''','];
+            end
+            comm = [comm(1 : end-1) ');'];
+            eval(comm);
+        case 'LK'
+            i = 2;
+            I = R_label;
+            siz = size(I(:, :, 1));
+            RegionPoint = varargin{1};
+            I1 = double(I(:, :, i)); vector1 = structField2Vector(RegionPoint{i}, 'MaxIntensityPos');
+            ind = sub2ind(siz, vector1(:, 2), vector1(:, 1));
+            I2 = double(I(:, :, i + 1)); vector2 = vector1;% vector2 = structField2Vector(RegionPoint{i + 1}, 'MaxIntensityPos');
+            [flowHor flowVer] = pyramidFlow(I1, I2, 5, 3, 3);
+            for j = 1 : size(vector1, 1)
+                vector2(j, :) = [vector1(j, 1) - flowVer(ind(j)) vector1(j, 2) - flowHor(ind(j))];
+            end
+            subplot(1, 2, 1); imshow(uint8(I1)); hold on; plot(vector1(:, 1), vector1(:, 2), 'r*'); hold off;
+            subplot(1, 2, 2); imshow(uint8(I2)); hold on; plot(vector2(:, 1), vector2(:, 2), 'r*'); hold off;
+        case 'STIP'
+            info = R_label;
+            videoName = varargin{1};
+            FeaturePoint = info.FeaturePoint;
+            FrameOLD = FeaturePoint(1, 3);
+            [video audio] = mmread(videoName, FrameOLD, [], false, true);
+            imshow(uint8(video.frames(1).cdata)); 
+            hold on; plot(FeaturePoint(1, 1), FeaturePoint(1, 2), 'r*'); hold off;
+            title(['Frame ' num2str(FrameOLD)]);
+            
+            for i = 2 : size(FeaturePoint, 1)
+                FrameNew = FeaturePoint(i, 3);
+                if FrameNew == FrameOLD
+                    hold on;
+                    plot(FeaturePoint(i, 1), FeaturePoint(i, 2), 'r*');
+                    hold off;
+                else
+                    pause(1/11);
+                    FrameOLD = FrameNew;
+                    [video audio] = mmread(videoName, FrameOLD, [], false, true);
+                    hold on; imshow(video.frames(1).cdata); plot(FeaturePoint(i, 1), FeaturePoint(i, 2), 'r*'); 
+                    title(['Frame ' num2str(FrameOLD)]);
+                    hold off;
+                end
+            end
+        case 'DCC_proof'
+%             close all;
+            RepV = R_label;     PBatch = varargin{1}; T = varargin{2};
+%             ncol = size(PBatch{1}, 2);
+            ncol = 1;
+            nclass = length(RepV); nsets = length(PBatch) / nclass;
+            PBatch2 = [];
+            for i = 1 : nclass
+                PBatch2 = cat(1, PBatch2, RepV{i});
+                PBatch2 = cat(1, PBatch2, PBatch((i - 1) * nsets + 1 : i * nsets));
+            end
+            nclips = length(PBatch2);  
+            Matrix_b_Batch = cell(ncol, 1);
+            Matrix_aT_Batch = cell(ncol, 1);
+%             matlabpool open
+            for i = 1 : ncol
+                Matrix_b = zeros(nclips); Matrix_aT = Matrix_b;
+                for j = 1 : length(PBatch2)
+                    for k = 1 : length(PBatch2)
+                        t1 = PBatch2{j}; t2 = PBatch2{k};
+                        Matrix_b(j, k) = subspace(t1(:, i), t2(:, i));
+                        Matrix_b(k, j) = Matrix_b(j, k);
+                        
+                        Matrix_aT(j, k) = subspace(T' * t1(:, i), T' * t2(:, i));
+                        Matrix_aT(k, j) = Matrix_aT(j, k);
+                    end
+                end
+                Matrix_b_Batch{i} = Matrix_b; Matrix_aT_Batch{i} = Matrix_aT;
+                
+                figure; subplot(1, 2, 1); imagesc(Matrix_b); title(['Before T ' num2str(i) 'Component']);
+                           subplot(1, 2, 2); imagesc(Matrix_aT); title(['After T ' num2str(i) 'Component']); colorbar;
+            end
+            R_labelShow.b = Matrix_b_Batch;
+            R_labelShow.aT = Matrix_aT_Batch;
+            Matrix_b_array= []; Matrix_aT_array = [];
+            for i = 1 : ncol
+                Matrix_b_array = cat(3, Matrix_b_array, Matrix_b_Batch{i});
+                Matrix_aT_array = cat(3, Matrix_aT_array, Matrix_aT_Batch{i});
+            end
+%             figure; subplot(1, 2, 1); imagesc(mean(Matrix_b_array, 3)); title('Mean of whole 5 Before T');
+%             subplot(1, 2, 2); imagesc(mean(Matrix_aT_array, 3)); title('Mean of whole 5 After T');
+%             for i = 1 : 7
+%                 figure(i); subplot(1, 2, 1); imagesc(Matrix_b_Batch{i}); title('Before T');
+%                            subplot(1, 2, 2); imagesc(Matrix_aT_Batch{i}); title('After T');
+%             end
+        case 'tvAnnotation'
+            info = R_label;
+            videoName = varargin{1};
+            BoundingBox = info.PersonInfo(:, 1:4, :);
+            nFrame = info.NumFrame;
+            mat = movie2var(videoName, 0, 1);
+            %siz = [size(mat, 1), size(mat, 2)];
+            ColorSet = varycolor(length(info.PersonID));
+            for i = 1 : nFrame
+                I = mat(:, :, :, i); %Ibox = I;
+                h = figure(1); imshow(I); hold on;
+                for j = 1 : size(BoundingBox, 3)
+%                     R_labelShow(:, :, i) = drawbox(tR_label, BoundingBox(i, 1:2), BoundingBox(i, 3:4));
+                    if ~isempty(find(BoundingBox(i, :, j), 1))
+%                         Ibox = drawbox(Ibox, ...
+%                             checkValidate([BoundingBox(i, 2, j) BoundingBox(i, 1, j)], 'BoundingBox', siz), ...
+%                             checkValidate([BoundingBox(i, 4, j) BoundingBox(i, 3, j)], 'BoundingBox', siz), 0.7);
+                        figure(h); 
+                        rectangle('Position', [BoundingBox(i, 1:2, j) BoundingBox(i, 3:4, j) - BoundingBox(i, 1:2, j)], 'EdgeColor', ColorSet(j, :));
+                    end
+                end
+                hold off; 
+                title(['Frame ' num2str(i)]); pause(1/22);
+            end
+        case 'GradientShow'
+            info = R_label;
+            videoName = varargin{1}; nwin = varargin{2}; Person = varargin{3}; record = 0;
+            if nargin == 6
+                moviefile = varargin{4};
+                record = 1;
+            end
+            BoundingBox = info.PersonInfo(:, 1:4, :);
+            nFrame = info.NumFrame;
+            mat = movie2var(videoName, 0, 1);
+            if record
+                aviobj = avifile(moviefile, 'fps', 22, 'compression', 'none');
+            end
+            
+            for i = 1 : nFrame
+                I = mat(:, :, :, i); Ibox = I; figure(1); imshow(Ibox);
+                for j = 1 : size(BoundingBox, 3)
+                    if ~isempty(find(BoundingBox(i, :, j), 1))
+                        Ibox = drawbox(Ibox, [BoundingBox(i, 2, j) BoundingBox(i, 1, j)], [BoundingBox(i, 4, j) BoundingBox(i, 3, j)]);
+                    end
+                end
+                    h = figure(1); hold on; imshow(Ibox); title(['Frame ' num2str(i)]);  hold off;
+                for j = 1 : size(BoundingBox, 3)
+                    if ~isempty(find(BoundingBox(i, :, j), 1))
+                        [u v x y] =quiverPre(Person(j).Gradient.Angles(:, :, i), BoundingBox(i, :, j), nwin);
+                        hold on;
+                        if j == 1
+                            quiver(x, y, u, v, 'LineWidth', 0.05, 'color', 'g');
+                        elseif j == 2
+                            quiver(x, y, u, v, 'LineWidth', 0.05, 'color', 'r');
+                        elseif j == 3
+                            quiver(x, y, u, v, 'LineWidth', 0.05, 'color', 'b');
+                        elseif j == 4
+                            quiver(x, y, u, v, 'LineWidth', 0.05, 'color', 'c');
+                        end
+                        hold off;
+                    end
+                end
+                pause(1/11);                
+                if record
+                    frame = getframe(h);
+                    aviobj = addframe(aviobj, frame);
+                end
+            end            
+            if record
+                aviobj = close(aviobj);
+            end
+%         case 'interaction_annotationShow'
+%             info = R_label;
+%             videoName = varargin{1}; 
+%             if nargin == 6
+%                 moviefile = varargin{4};
+%                 record = 1;
+%             end
+%             BoundingBox = info.PersonInfo(:, 1:4, :);
+%             nFrame = info.NumFrame;
+%             mat = movie2var(videoName, 0, 1);
+            
+            
+            
+        case 'STIP_Trajectory'
+            info = R_label;
+            FeaturePoint = info.FeaturePoint;
+            STIPVector = info.STIPVector;
+            
+            videoName = varargin{1}; record = 0;
+            if nargin == 4
+                moviefile = varargin{2};
+                record = 1;
+            end
+                
+            mat = movie2var(videoName, 1, 1);
+            nframe = size(mat, ndims(mat));
+            VectorPost = trajPre2trajPost(STIPVector, FeaturePoint, nframe);
+            
+            if record
+                aviobj = avifile(moviefile, 'fps', 22, 'compression', 'none');
+            end
+            
+            for i = 1 : nframe
+                if ndims(mat) == 3
+                    timg = mat(:, :, i);
+                else
+                    timg = mat(:, :, :, i);
+                end
+                h = figure(1);
+%                 imshow(flipud(timg));                
+                imshow(timg);
+                title(['Frame ' num2str(i)]);
+                
+                for j = 1 : length(VectorPost{i})
+                    tTraj = VectorPost{i}{j};
+                    hold on;
+                    plot(tTraj(:, 1), size(mat, 1) + 1 - tTraj(:, 2), 'b-');
+%                     plot(tTraj(:, 2), size(mat, 2) + 1 - tTraj(:, 1), 'b-');
+                    hold off;
+                end
+%                 idx = find(FeaturePoint(:, 3) == i);
+%                 if ~isempty(idx)
+%                     hold on;
+%                     for j = 1 : length(idx)
+%                         figure(1); plot(
+%                         figure(1); plot(FeaturePoint(idx(j), 1), FeaturePoint(idx(j), 2), 'rx');
+%                         figure(1); plot(STIPVector{idx(j)}(:, 1), STIPVector{idx(j)}(:, 2), 'g-');                        
+%                     end
+%                     hold off;
+%                 end
+                pause(1/22);
+                if record
+                    frame = getframe(h);
+                    aviobj = addframe(aviobj, frame);
+                end
+            end
+            if record
+                aviobj = close(aviobj);
+            end
+            
+    end
+    
+catch ME
+    display(['i = ' num2str(i)]);
+    display(ME.message);    
+end
