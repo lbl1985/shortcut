@@ -510,6 +510,12 @@ try
             mat = movie2var(videoName, 0, 1);
             %siz = [size(mat, 1), size(mat, 2)];
             ColorSet = varycolor(length(info.PersonID));
+            
+            Trajectory = [(BoundingBox(:, 1, :) + BoundingBox(:, 3, :)) / 2 ...
+                (BoundingBox(:, 2, :) + BoundingBox(:, 4, :)) / 2];
+            % B stands for Beginning, Record the starting frame of each
+            % person, whom has been detected.
+            B = zeros(length(info.PersonID), 1);
             for i = 1 : nFrame
                 I = mat(:, :, :, i); %Ibox = I;
                 h = figure(1); imshow(I); hold on;
@@ -521,6 +527,46 @@ try
 %                             checkValidate([BoundingBox(i, 4, j) BoundingBox(i, 3, j)], 'BoundingBox', siz), 0.7);
                         figure(h); 
                         rectangle('Position', [BoundingBox(i, 1:2, j) BoundingBox(i, 3:4, j) - BoundingBox(i, 1:2, j)], 'EdgeColor', ColorSet(j, :));
+                    end
+                    if ~isempty(find(Trajectory(i, :, j), 1))
+                        if B(j) == 0, B(j) = i; end
+                        figure(h);
+                        plot(Trajectory(B(j) : i, 1, j), Trajectory(B(j) : i, 2, j), '*-', 'MarkerEdgeColor', ColorSet(j, :), 'Color', ColorSet(j, :));                        
+                    end
+                end
+                hold off; 
+                title(['Frame ' num2str(i)]); pause(1/22);
+            end
+        case 'tvAnnotation_data'
+            info = R_label;
+            mat = varargin{1};
+            BoundingBox = info.PersonInfo(:, 1:4, :);
+            nFrame = info.NumFrame;
+%             mat = movie2var(videoName, 0, 1);
+            %siz = [size(mat, 1), size(mat, 2)];
+            ColorSet = varycolor(length(info.PersonID));
+            
+            Trajectory = [(BoundingBox(:, 1, :) + BoundingBox(:, 3, :)) / 2 ...
+                (BoundingBox(:, 2, :) + BoundingBox(:, 4, :)) / 2];
+            % B stands for Beginning, Record the starting frame of each
+            % person, whom has been detected.
+            B = zeros(length(info.PersonID), 1);
+            for i = 1 : nFrame
+                I = mat(:, :, :, i); %Ibox = I;
+                h = figure(1); imshow(I); hold on;
+                for j = 1 : size(BoundingBox, 3)
+%                     R_labelShow(:, :, i) = drawbox(tR_label, BoundingBox(i, 1:2), BoundingBox(i, 3:4));
+                    if ~isempty(find(BoundingBox(i, :, j), 1))
+%                         Ibox = drawbox(Ibox, ...
+%                             checkValidate([BoundingBox(i, 2, j) BoundingBox(i, 1, j)], 'BoundingBox', siz), ...
+%                             checkValidate([BoundingBox(i, 4, j) BoundingBox(i, 3, j)], 'BoundingBox', siz), 0.7);
+                        figure(h); 
+                        rectangle('Position', [BoundingBox(i, 1:2, j) BoundingBox(i, 3:4, j) - BoundingBox(i, 1:2, j)], 'EdgeColor', ColorSet(j, :));
+                    end
+                    if ~isempty(find(Trajectory(i, :, j), 1))
+                        if B(j) == 0, B(j) = i; end
+                        figure(h);
+                        plot(Trajectory(B(j) : i, 1, j), Trajectory(B(j) : i, 2, j), '*-', 'MarkerEdgeColor', ColorSet(j, :), 'Color', ColorSet(j, :));                        
                     end
                 end
                 hold off; 
