@@ -4,13 +4,21 @@ clear;
 nT			= 10;		%number of T
 n_sample	= 600;		%number of particles
 
-res_path	= 'result\pktest02\'; %folder for the tracking result
+if ispc
+    res_path	= 'result\pktest02\'; %folder for the tracking result
+else
+    res_path	= 'result/pktest02/'; %folder for the tracking result
+end
 
 %preparing frames
-fprefix		= 'pktest02\frame';%folder storing the images
+if ispc
+    fprefix		= 'pktest02\frame';%folder storing the images
+else
+    fprefix		= 'pktest02/frame';%folder storing the images
+end
 fext		= 'jpg';				%image format
 start_frame	= 1087;					%starting frame number
-nframes		= 300;					%number of frames to be tracked
+nframes		= 120;					%number of frames to be tracked
 sz_T		= [12 15];	%size of the template
 numzeros	= 5;	%number of digits for the frame index
 
