@@ -559,22 +559,14 @@ try
             % person, whom has been detected.
             B = zeros(length(info.PersonID), 1);
             
-            for i = 1 : nFrame
-                for j = 1 : size(BoundingBox, 3)
-                    if ~isempty(find(Trajectory(i, :, j), 1))
-                        if B(j) == 0, B(j) = i; end
-                    end
-                end
-            end
-            
-            if exist('frame', 'var')
+            if isexist(frame, 'var');
                 i = frame; 
                 if ndims(mat) == 4
                     I = mat(:, :, :, i); %Ibox = I;
                 else
                     I = mat(:, :, i);
                 end
-                if exist('h', 'var')
+                if isexist(fr
                     h = figure(1); 
                 end
                 figure(h); imshow(I); hold on;
@@ -584,7 +576,7 @@ try
                         rectangle('Position', [BoundingBox(i, 1:2, j) BoundingBox(i, 3:4, j) - BoundingBox(i, 1:2, j)], 'EdgeColor', ColorSet(j, :));
                     end
                     if ~isempty(find(Trajectory(i, :, j), 1))
-%                         if B(j) == 0, B(j) = i; end
+                        if B(j) == 0, B(j) = i; end
                         figure(h);
                         plot(Trajectory(B(j) : i, 1, j), Trajectory(B(j) : i, 2, j), '*-', 'MarkerEdgeColor', ColorSet(j, :), 'Color', ColorSet(j, :));                        
                     end
@@ -598,7 +590,7 @@ try
                     else
                         I = mat(:, :, i);
                     end
-                    if exist('h', 'var')
+                    if nargin == 5
                         h = figure(1); 
                     end
                     figure(h); imshow(I); hold on;
@@ -608,7 +600,7 @@ try
                             rectangle('Position', [BoundingBox(i, 1:2, j) BoundingBox(i, 3:4, j) - BoundingBox(i, 1:2, j)], 'EdgeColor', ColorSet(j, :));
                         end
                         if ~isempty(find(Trajectory(i, :, j), 1))
-%                             if B(j) == 0, B(j) = i; end
+                            if B(j) == 0, B(j) = i; end
                             figure(h);
                             plot(Trajectory(B(j) : i, 1, j), Trajectory(B(j) : i, 2, j), '*-', 'MarkerEdgeColor', ColorSet(j, :), 'Color', ColorSet(j, :));                        
                         end
