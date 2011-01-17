@@ -540,6 +540,8 @@ try
         case 'tvAnnotation_data'
             info = R_label;
             mat = varargin{1};
+            record = 0; moviefile = 'trial1.avi';
+            
             if nargin > 3
                 frame = varargin{2};
             end
@@ -548,13 +550,17 @@ try
                 h = varargin{3};
             end
             BoundingBox = info.PersonInfo(:, 1:4, :);
-            nFrame = info.NumFrame;
+            nFrame = size(BoundingBox, 1);
 %             mat = movie2var(videoName, 0, 1);
             %siz = [size(mat, 1), size(mat, 2)];
             ColorSet = varycolor(length(info.PersonID));
             
             Trajectory = [(BoundingBox(:, 1, :) + BoundingBox(:, 3, :)) / 2 ...
                 (BoundingBox(:, 2, :) + BoundingBox(:, 4, :)) / 2];
+            
+            if record
+                aviobj = avifile(moviefile, 'fps', 22, 'compression', 'none');
+            end
             % B stands for Beginning, Record the starting frame of each
             % person, whom has been detected.
             B = zeros(length(info.PersonID), 1);
@@ -567,7 +573,7 @@ try
                 end
             end
             
-            if exist('frame', 'var')
+            if exist('frame', 'var') && frame <= nFrame
                 i = frame; 
                 if ndims(mat) == 4
                     I = mat(:, :, :, i); %Ibox = I;
@@ -591,6 +597,10 @@ try
                 end
                 hold off; 
                 title(['Frame ' num2str(i)]); pause(1/22);
+                if record
+                    frame = getframe(h);
+                    aviobj = addframe(aviobj, frame);
+                end
             else            
                 for i = 1 : nFrame
                     if ndims(mat) == 4
@@ -615,8 +625,16 @@ try
                     end
                     hold off; 
                     title(['Frame ' num2str(i)]); pause(1/22);
+                    if record
+                        frame = getframe(h);
+                        aviobj = addframe(aviobj, frame);
+                    end
                 end
             end
+            if record
+                aviobj = close(aviobj);
+            end
+                
         case 'GradientShow'
             info = R_label;
             videoName = varargin{1}; nwin = varargin{2}; Person = varargin{3}; record = 0;
