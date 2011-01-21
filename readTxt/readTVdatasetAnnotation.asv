@@ -8,7 +8,7 @@ fid = fopen(fileName);
 % The first line
 tline = fgetl(fid);
 C = textscan(tline, '%s %d');
-info.NumFrame = getNumFrame(fileName) + 1;
+info.NumFrame = getNumFrame(fid);
 PersonID = []; PersonInfo = []; FrameInfoBatch = cell(info.NumFrame, 1);
 
 while 1
@@ -83,36 +83,4 @@ catch
     display(['HeadStr is: ' HeadStr]);
 end
 
-function NumFrame = getNumFrame(fileName)
-fid = fopen(fileName);
-% for i = 1 : 3
-%     tline = fgetl(fid);
-% end
-% The first line
-tline = fgetl(fid);
-% C = textscan(tline, '%s %d');
-
-    while 1
-        tline = fgetl(fid);
-        if ~ischar(tline)
-            break;
-        end
-
-        remain = tline;
-        for i = 1 : 2
-            posC = strfind(remain, ':');
-            [token remain] = strtok(remain(posC + 1 : end));
-            switch num2str(i)
-                case '1'
-                    NumFrame = str2num(token);
-                case '2'
-                    FrameInfo.pn = str2num(token);
-            end
-        end
-
-        FrameInfo.inter = remain;
-
-        for i = 1 : FrameInfo.pn
-            tline = fgetl(fid); 
-        end
-    end
+function NumFrame = getNumFrame(fid)

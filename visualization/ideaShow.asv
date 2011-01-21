@@ -550,7 +550,7 @@ try
                 h = varargin{3};
             end
             BoundingBox = info.PersonInfo(:, 1:4, :);
-            nFrame = size(BoundingBox, 1);
+            nFrame = info.NumFrame;
 %             mat = movie2var(videoName, 0, 1);
             %siz = [size(mat, 1), size(mat, 2)];
             ColorSet = varycolor(length(info.PersonID));
@@ -573,7 +573,7 @@ try
                 end
             end
             
-            if exist('frame', 'var') && frame <= nFrame
+            if exist('frame', 'var') && frame < size(BoundingBox, 1)
                 i = frame; 
                 if ndims(mat) == 4
                     I = mat(:, :, :, i); %Ibox = I;
@@ -597,10 +597,6 @@ try
                 end
                 hold off; 
                 title(['Frame ' num2str(i)]); pause(1/22);
-                if record
-                    frame = getframe(h);
-                    aviobj = addframe(aviobj, frame);
-                end
             else            
                 for i = 1 : nFrame
                     if ndims(mat) == 4
@@ -625,15 +621,13 @@ try
                     end
                     hold off; 
                     title(['Frame ' num2str(i)]); pause(1/22);
-                    if record
-                        frame = getframe(h);
-                        aviobj = addframe(aviobj, frame);
-                    end
                 end
             end
-            if record
-                aviobj = close(aviobj);
-            end
+             pause(1/11);                
+                if record
+                    frame = getframe(h);
+                    aviobj = addframe(aviobj, frame);
+                end
                 
         case 'GradientShow'
             info = R_label;
