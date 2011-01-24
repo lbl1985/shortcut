@@ -1,0 +1,22 @@
+function varargout = mat2frames(filename, varargin)
+dest = varargin{1};
+%     movie = varargin{2};
+if ispc
+    k = strfind(filename, '\');
+else
+    k = strfind(filename, '/');
+end
+%     olderpath = pwd;
+movie = mmread(filename);
+nFrame = movie.nrFramesTotal;
+varargout{1} = nFrame;
+nDigtal = 4;
+if ~exist(dest, 'dir')
+    mkdir(dest);
+end
+cd(dest);
+filenameT = filename(k(end) + 1 : end-4);
+for i = 1 : nFrame
+    I = movie.frames(i).cdata;
+    imwrite(I, [filenameT '_' int2str2(i, nDigtal), '.jpg']);
+end
