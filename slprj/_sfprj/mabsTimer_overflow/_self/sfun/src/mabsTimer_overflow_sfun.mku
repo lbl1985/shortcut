@@ -1,0 +1,85 @@
+#--------------------------- Tool Specifications -------------------------
+#
+# Modify the following macros to reflect the tools you wish to use for
+# compiling and linking your code.
+#
+CC = /mathworks/devel/sandbox/bli/Acgir3/matlab/bin/mex
+LD = $(CC)
+ 
+MACHINE     = mabsTimer_overflow
+TARGET      = sfun
+CHART_SRCS 	= \
+		c1_mabsTimer_overflow.c
+MACHINE_SRC	= mabsTimer_overflow_sfun.c
+MACHINE_REG = mabsTimer_overflow_sfun_registry.c
+MEX_WRAPPER =
+MAKEFILE    = mabsTimer_overflow_sfun.mku
+MATLAB_ROOT	= /mathworks/devel/sandbox/bli/Acgir3/matlab/toolbox/stateflow/stateflow/../../..
+BUILDARGS   = 
+#------------------------------ Include/Lib Path ------------------------------
+ 
+USER_INCLUDES = 
+MATLAB_INCLUDES = -I$(MATLAB_ROOT)/simulink/include \
+						-I$(MATLAB_ROOT)/extern/include \
+						-I/mathworks/devel/sandbox/bli/Acgir3/matlab/stateflow/c/mex/include \
+						-I/mathworks/devel/sandbox/bli/Acgir3/matlab/stateflow/c/debugger/include
+
+DSP_INCLUDES    =
+
+INCLUDE_PATH =  $(MATLAB_INCLUDES) $(DSP_INCLUDES) $(COMPILER_INCLUDES)
+ 
+#----------------- Compiler and Linker Options --------------------------------
+ 
+# Optimization Options
+OPT_OPTS = -O
+ 
+# General User Options
+OPTS =
+ 
+CC_OPTS = $(OPT_OPTS) $(OPTS)
+CPP_REQ_DEFINES = -DMATLAB_MEX_FILE
+ 
+# Uncomment this line to move warning level to W4
+# cflags = $(cflags:W3=W4)
+CFLAGS = $(CC_OPTS) $(CPP_REQ_DEFINES) $(INCLUDE_PATH)
+ 
+LDFLAGS = 
+ 
+#----------------------------- Source Files -----------------------------------
+ 
+REQ_SRCS  = $(MACHINE_SRC) $(MACHINE_REG) $(MEX_WRAPPER) $(CHART_SRCS)
+
+USER_ABS_OBJS =
+
+TFL_ABS_OBJS =
+REQ_OBJS = $(REQ_SRCS:.cpp=.o)
+REQ_OBJS2 = $(REQ_OBJS:.c=.o)
+OBJS = $(REQ_OBJS2) $(USER_ABS_OBJS) $(TFL_ABS_OBJS)
+OBJLIST_FILE = mabsTimer_overflow_sfun.mol
+SFCLIB = /mathworks/devel/sandbox/bli/Acgir3/matlab/stateflow/c/mex/lib/glnxa64/sfc_mex.a /mathworks/devel/sandbox/bli/Acgir3/matlab/stateflow/c/debugger/lib/glnxa64/sfc_debug.a
+USER_LIBS =
+LINK_MACHINE_LIBS =
+FIXEDPOINTLIB = -L/mathworks/devel/sandbox/bli/Acgir3/matlab/bin/glnxa64 -lfixedpoint
+UTLIB = -lut
+MWMATHUTILLIB = -lmwmathutil
+  MAPCSF = /mathworks/devel/sandbox/bli/Acgir3/matlab/tools/glnxa64/mapcsf
+   # RUN_MAPCSF_ON_UNIX is defined only if MAPCSF exists on this platform.
+   ifneq ($(wildcard $(MAPCSF)),) # run MAPCSF if it exists on this platform
+      RUN_MAPCSF_ON_UNIX =  /mathworks/devel/sandbox/bli/Acgir3/matlab/tools/glnxa64/mapcsf $@
+   endif
+ 
+#--------------------------------- Rules --------------------------------------
+ 
+MEX_FILE_NAME = $(MACHINE)_$(TARGET).mexa64
+ 
+ $(MEX_FILE_NAME): $(MAKEFILE) $(OBJS) $(SFCLIB) $(USER_LIBS) $(MEXLIB)
+	@echo ### Linking ...
+	$(CC) -silent -output $(MEX_FILE_NAME) $(OBJS) $(USER_LIBS) $(LINK_MACHINE_LIBS) $(SFCLIB) $(FIXEDPOINTLIB) $(UTLIB) $(MWMATHUTILLIB)
+	$(RUN_MAPCSF_ON_UNIX)
+
+%.o :	%.c
+	$(CC) -c $(CFLAGS) $<
+
+%.o :	%.cpp
+	$(CC) -c $(CFLAGS) $<
+

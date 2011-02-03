@@ -1,7 +1,7 @@
 function go(str)
 
 if isunix
-    workingpath = 'C:\Users\lbl1985\Documents\MATLAB\';
+    workingpath = '/home/binlong/Documents/MATLAB/';
 end
 
 if ispc

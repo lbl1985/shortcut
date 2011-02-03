@@ -22,7 +22,8 @@ switch deblank(ComputerName)
     case 'lbl1985-pc'
         workingpath = 'C:\Users\lbl1985\Documents\MATLAB\work\';
     case 'binlong-desktop'
-        workingpath = '/media/A642E42A42E3FD45/Users/Binlong/Documents/MATLAB/work/';
+%         workingpath = '/media/A642E42A42E3FD45/Users/Binlong/Documents/MATLAB/work/';
+        workingpath = '/home/binlong/Documents/MATLAB/work/';
     case 'XPS-PC'
         workingpath = 'C:\Users\XPS\Documents\MATLAB\work\';
     case 'iMac.local'
