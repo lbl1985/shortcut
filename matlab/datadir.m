@@ -17,6 +17,7 @@ function dir = datadir( set_ind, varargin )
     % dir = 'C:\code\cuboids\face_data';
     
     if ispc        
+        workingpath = 'C:\Users\lbl1985\Documents\MATLAB\work';
         endsign = '\';
     else
         workingpath = '/media/A642E42A42E3FD45/Users/Binlong/Documents/MATLAB/work';
