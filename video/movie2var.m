@@ -6,7 +6,7 @@ end
 video = mmread(filename);
 n = length(video.frames);
 
-if isempth(isGray)
+if isempty(isGray)
     % user dont' specifically require for gray or rgb. Then save it as the
     % original format
     sampleFrame = video.frames(1).cdata;
