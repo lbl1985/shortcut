@@ -11,19 +11,15 @@ classdef video
         function varargout = movie2mat(varargin)
             if nargin == 1 && nargout == 0
                 % original movie2mat.m function
-                video = mmread(filename);
-                n = length(video.frames);
-                mat = zeros(video.height, video.width ,3, n);
-                for i = 1 : n
-                    mat(:, :, :, i) = video.frames(i).cdata;
+                % save a movie into a .mat file at the video's orginial
+                % location.
+                movie2mat(varargin{:});
+            else if nargin == 3 && nargout == 1
+                    %  going to be movie2var.m
+                    varargout{1} = movie2var(varargin{:});
                 end
-                save mat mat
-            else if nargin == 2 && varargout == 1
-                    
             end
-        end
-        
-    end
-    
+        end        
+    end    
 end
 
